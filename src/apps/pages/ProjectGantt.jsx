@@ -419,8 +419,8 @@ const ProjectGantt = () => {
                       </thead>
                       <tbody className="bg-white divide-y divide-gray-100">
                         {getVisibleTasks(filteredTasks).map((task) => (
-                          <tr key={task.id} className="hover:bg-gray-50">
-                            <td className="px-2 py-3 whitespace-nowrap text-center">
+                          <tr key={task.id} className="hover:bg-gray-50" style={{ height: '80px' }}>
+                            <td className="px-2 py-3 whitespace-nowrap text-center align-middle" style={{ height: '60px' }}>
                               <div className="flex justify-center space-x-1">
                                 <button
                                   onClick={() => navigate(`/projects/${projectId}/tasks/${task.id}`)}
@@ -456,24 +456,24 @@ const ProjectGantt = () => {
                                 </button>
                               </div>
                             </td>
-                            <td className="px-2 py-3 whitespace-nowrap text-left">
+                            <td className="px-2 py-3 whitespace-nowrap text-left align-middle" style={{ height: '60px' }}>
                               <span className="text-xs font-mono text-gray-600 bg-gray-100 px-2 py-1 rounded">
                                 {task.id || '-'}
                               </span>
                             </td>
-                            <td className="px-3 py-3 text-left">
-                              <div className="flex items-center">
+                            <td className="px-3 py-3 text-left align-middle overflow-hidden" style={{ height: '80px' }}>
+                              <div className="flex items-center h-full">
                                 <div 
                                   style={{ 
                                     marginLeft: `${(task.level || 0) * 20}px`,
                                     paddingLeft: `${(task.level || 0) * 4}px`
                                   }} 
-                                  className="flex items-center"
+                                  className="flex items-center w-full"
                                 >
                                   {hasChildTasks(task.id) && (
                                     <button
                                       onClick={() => toggleTaskCollapse(task.id)}
-                                      className="mr-2 p-1 hover:bg-gray-200 rounded transition-colors"
+                                      className="mr-2 p-1 hover:bg-gray-200 rounded transition-colors flex-shrink-0"
                                       title={collapsedTasks.has(task.id) ? "Expandir" : "Recolher"}
                                     >
                                       {collapsedTasks.has(task.id) ? (
@@ -484,9 +484,9 @@ const ProjectGantt = () => {
                                     </button>
                                   )}
                                   {task.level > 0 && (
-                                    <span className="text-gray-400 mr-2">└─</span>
+                                    <span className="text-gray-400 mr-2 flex-shrink-0">└─</span>
                                   )}
-                                  <span className={`${task.level === 0 ? 'font-semibold text-gray-900' : 'text-gray-700'}`}>
+                                  <span className={`${task.level === 0 ? 'font-semibold text-gray-900' : 'text-gray-700'} truncate`}>
                                     {task.title || 'Sem título'}
                                   </span>
                                 </div>
@@ -517,10 +517,10 @@ const ProjectGantt = () => {
                       </tr>
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-100">
-                      {filteredTasks.map((task) => (
-                        <tr key={task.id} className="hover:bg-gray-50">
+                      {getVisibleTasks(filteredTasks).map((task) => (
+                        <tr key={task.id} className="hover:bg-gray-50" style={{ height: '80px' }}>
                           {visibleColumns.tipo && (
-                            <td className="px-2 py-3 whitespace-nowrap text-center">
+                            <td className="px-2 py-3 whitespace-nowrap text-center align-middle" style={{ height: '60px' }}>
                               <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
                                 task.type === 'Epic' ? 'bg-purple-100 text-purple-800' :
                                 task.type === 'Story' ? 'bg-blue-100 text-blue-800' :
@@ -533,7 +533,7 @@ const ProjectGantt = () => {
                             </td>
                           )}
                           {visibleColumns.status && (
-                            <td className="px-2 py-3 whitespace-nowrap text-center">
+                            <td className="px-2 py-3 whitespace-nowrap text-center align-middle" style={{ height: '60px' }}>
                               <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
                                 task.status === 'Concluído' ? 'bg-green-100 text-green-800' :
                                 task.status === 'Em Progresso' ? 'bg-yellow-100 text-yellow-800' :
@@ -544,7 +544,7 @@ const ProjectGantt = () => {
                             </td>
                           )}
                           {visibleColumns.responsavel && (
-                            <td className="px-2 py-3 whitespace-nowrap text-center">
+                            <td className="px-2 py-3 whitespace-nowrap text-center align-middle" style={{ height: '60px' }}>
                               {task.assignee ? (
                                 <div className="flex items-center justify-center">
                                   <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center text-white text-xs mr-2">
@@ -561,28 +561,28 @@ const ProjectGantt = () => {
                             </td>
                           )}
                           {visibleColumns.dataInicio && (
-                            <td className="px-2 py-3 whitespace-nowrap text-center">
+                            <td className="px-2 py-3 whitespace-nowrap text-center align-middle" style={{ height: '60px' }}>
                               <span className="text-sm">
                                 {task.startDate ? new Date(task.startDate).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }) : '-'}
                               </span>
                             </td>
                           )}
                           {visibleColumns.dataFim && (
-                            <td className="px-2 py-3 whitespace-nowrap text-center">
+                            <td className="px-2 py-3 whitespace-nowrap text-center align-middle" style={{ height: '60px' }}>
                               <span className="text-sm">
                                 {task.endDate ? new Date(task.endDate).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }) : '-'}
                               </span>
                             </td>
                           )}
                           {visibleColumns.duracao && (
-                            <td className="px-2 py-3 whitespace-nowrap text-center">
+                            <td className="px-2 py-3 whitespace-nowrap text-center align-middle" style={{ height: '60px' }}>
                               <span className="text-sm font-medium">
                                 {task.duration ? `${task.duration}d` : '-'}
                               </span>
                             </td>
                           )}
                           {visibleColumns.prioridade && (
-                            <td className="px-2 py-3 whitespace-nowrap text-center">
+                            <td className="px-2 py-3 whitespace-nowrap text-center align-middle" style={{ height: '60px' }}>
                               <div className="flex items-center justify-center">
                                 {task.priority === 'Alta' ? (
                                   <div className="flex items-center">
@@ -612,21 +612,21 @@ const ProjectGantt = () => {
                             </td>
                           )}
                           {visibleColumns.epico && (
-                            <td className="px-2 py-3 whitespace-nowrap text-center">
+                            <td className="px-2 py-3 whitespace-nowrap text-center align-middle" style={{ height: '60px' }}>
                               <span className="text-sm text-purple-600 font-medium truncate max-w-24">
                                 {task.epic || '-'}
                               </span>
                             </td>
                           )}
                           {visibleColumns.sp && (
-                            <td className="px-2 py-3 whitespace-nowrap text-center">
+                            <td className="px-2 py-3 whitespace-nowrap text-center align-middle" style={{ height: '60px' }}>
                               <span className="text-sm font-mono bg-blue-50 text-blue-700 px-2 py-1 rounded">
                                 {task.storyPoints || '-'}
                               </span>
                             </td>
                           )}
                           {visibleColumns.progresso && (
-                            <td className="px-2 py-3 whitespace-nowrap text-center">
+                            <td className="px-2 py-3 whitespace-nowrap text-center align-middle" style={{ height: '60px' }}>
                               <div className="flex items-center justify-center">
                                 <div className="w-16 bg-gray-200 rounded-full h-2 mr-2">
                                   <div 
