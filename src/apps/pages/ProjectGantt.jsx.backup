@@ -1,0 +1,2240 @@
+import React, { useState, useMemo, useEffect } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import useAppStore from '../../stores/appStore';
+import { 
+  ArrowLeftIcon, 
+  MagnifyingGlassIcon, 
+  ListBulletIcon, 
+  ChartBarIcon,
+  EllipsisVerticalIcon,
+  ChevronRightIcon,
+  ChevronLeftIcon,
+  DocumentArrowDownIcon,
+  ExclamationTriangleIcon,
+  UserGroupIcon,
+  PlusIcon,
+  MinusIcon,
+  EyeIcon,
+  AdjustmentsHorizontalIcon,
+  XMarkIcon,
+  PencilIcon
+} from '@heroicons/react/24/outline';
+
+const ProjectGantt = () => {
+  const { projectId } = useParams();
+  const navigate = useNavigate();
+  const { projects, tasks, updateTask, addTask, deleteTask, updateTasksOrder } = useAppStore();
+  
+  const [viewMode, setViewMode] = useState('gantt');
+  const [searchTerm, setSearchTerm] = useState('');
+  const [zoomLevel, setZoomLevel] = useState(100);
+
+  const project = projects.find(p => p.id === projectId);
+  const projectTasks = tasks.filter(task => task.projectId === projectId);
+
+  // Estado para animações
+  const [animatingTasks, setAnimatingTasks] = useState(new Set());
+  const [feedbackMessage, setFeedbackMessage] = useState('');
+  
+  // Estados para edição inline
+  const [editingCell, setEditingCell] = useState(null); // { taskId, field }
+  const [newTaskRow, setNewTaskRow] = useState(null); // dados da nova tarefa sendo criada
+  
+  // Estados para drag-and-drop
+  const [draggedTask, setDraggedTask] = useState(null);
+  const [dragOverIndex, setDragOverIndex] = useState(null);
+  
+  // Estado para configuração de colunas
+  const [showColumnConfig, setShowColumnConfig] = useState(false);
+  const [visibleColumns, setVisibleColumns] = useState([
+    'actions', 'id', 'name', 'type', 'status', 'assignee', 'startDate', 'progress', 'duration'
+  ]);
+
+  // Definição de todas as colunas disponíveis
+  const availableColumns = [
+    { id: 'actions', label: 'Ações', required: true },
+    { id: 'id', label: 'ID', required: true },
+    { id: 'name', label: 'Nome da Tarefa', required: true },
+    { id: 'type', label: 'Tipo', required: false },
+    { id: 'status', label: 'Status', required: false },
+    { id: 'assignee', label: 'Responsável', required: false },
+    { id: 'startDate', label: 'Data Início', required: false },
+    { id: 'endDate', label: 'Data Fim', required: false },
+    { id: 'progress', label: 'Progresso', required: false },
+    { id: 'duration', label: 'Duração', required: false },
+    { id: 'estimatedHours', label: 'Horas Estimadas', required: false },
+    { id: 'actualHours', label: 'Horas Reais', required: false },
+    { id: 'storyPoints', label: 'Story Points', required: false },
+    { id: 'priority', label: 'Prioridade', required: false },
+    { id: 'workstream', label: 'Workstream', required: false },
+    { id: 'tags', label: 'Tags', required: false }
+  ];
+
+  // Função para converter Date para string no formato YYYY-MM-DD
+  const formatDateForInput = (date) => {
+    if (!date) return '';
+    if (date instanceof Date) {
+      return date.toISOString().split('T')[0];
+    }
+    if (typeof date === 'string') {
+      return new Date(date).toISOString().split('T')[0];
+    }
+    return '';
+  };
+
+  // Funções para gerenciar colunas
+  const toggleColumn = (columnId) => {
+    const column = availableColumns.find(col => col.id === columnId);
+    if (column?.required) return; // Não permite remover colunas obrigatórias
+    
+    setVisibleColumns(prev => {
+      if (prev.includes(columnId)) {
+        return prev.filter(id => id !== columnId);
+      } else {
+        return [...prev, columnId];
+      }
+    });
+  };
+
+  const resetColumns = () => {
+    setVisibleColumns(['actions', 'id', 'name', 'type', 'status', 'assignee', 'startDate', 'progress', 'duration']);
+  };
+
+  const getVisibleColumnsData = () => {
+    return availableColumns.filter(col => visibleColumns.includes(col.id));
+  };
+
+  // Função para renderizar célula baseada no tipo de coluna
+  const renderCell = (task, columnId) => {
+    const isEditing = editingCell && editingCell.taskId === task.id && editingCell.field === columnId;
+    
+    // Campos editáveis
+    const editableFields = ['name', 'type', 'status', 'startDate', 'endDate', 'progress', 'duration', 'estimatedHours', 'actualHours', 'storyPoints', 'priority', 'workstream'];
+    
+    if (isEditing && editableFields.includes(columnId)) {
+      return renderEditableCell(task, columnId);
+    }
+    
+    switch (columnId) {
+      case 'name':
+        return (
+          <div 
+            className="flex items-center cursor-pointer hover:bg-gray-100 p-1 rounded"
+            onClick={() => startEditing(task.id, 'name')}
+          >
+            <div style={{ marginLeft: `${(task.level || 0) * 16}px` }} className="flex items-center">
+              <span className={`${task.level === 0 ? 'font-semibold' : ''}`}>
+                {task.title}
+              </span>
+            </div>
+          </div>
+        );
+      
+      case 'id':
+        return (
+          <span className="text-xs font-mono text-gray-600 bg-gray-100 px-2 py-1 rounded">
+            {task.id}
+          </span>
+        );
+      
+      case 'type':
+        return (
+          <span 
+            className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium cursor-pointer hover:opacity-80 ${
+              task.type === 'Epic' ? 'bg-purple-100 text-purple-800' :
+              task.type === 'Story' ? 'bg-blue-100 text-blue-800' :
+              task.type === 'Task' ? 'bg-green-100 text-green-800' :
+              task.type === 'Bug' ? 'bg-red-100 text-red-800' :
+              'bg-gray-100 text-gray-800'
+            }`}
+            onClick={() => startEditing(task.id, 'type')}
+          >
+            {task.type || 'Task'}
+          </span>
+        );
+      
+      case 'status':
+        return (
+          <span 
+            className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium cursor-pointer hover:opacity-80 ${
+              task.status === 'Concluído' ? 'bg-green-100 text-green-800' :
+              task.status === 'Em Progresso' ? 'bg-blue-100 text-blue-800' :
+              'bg-gray-100 text-gray-800'
+            }`}
+            onClick={() => startEditing(task.id, 'status')}
+          >
+            {task.status}
+          </span>
+        );
+      
+      case 'assignee':
+        return (
+          <div className="flex justify-center">
+            {task.assignee && (
+              <div className="w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center text-white text-xs font-medium">
+                {task.assignee.name.split(' ').map(n => n[0]).join('').toUpperCase()}
+              </div>
+            )}
+          </div>
+        );
+      
+      case 'startDate':
+        return (
+          <span 
+            className="cursor-pointer hover:bg-gray-100 p-1 rounded block"
+            onClick={() => startEditing(task.id, 'startDate')}
+          >
+            {task.startDate ? formatDateForInput(task.startDate) : '-'}
+          </span>
+        );
+      
+      case 'endDate':
+        return (
+          <span 
+            className="cursor-pointer hover:bg-gray-100 p-1 rounded block"
+            onClick={() => startEditing(task.id, 'endDate')}
+          >
+            {task.endDate ? formatDateForInput(task.endDate) : '-'}
+          </span>
+        );
+      
+      case 'progress':
+        return (
+          <div 
+            className="flex items-center cursor-pointer hover:bg-gray-100 p-1 rounded"
+            onClick={() => startEditing(task.id, 'progress')}
+          >
+            <div className="w-full bg-gray-200 rounded-full h-2 mr-2">
+              <div
+                className={`h-2 rounded-full ${getBarColor(task.status, task.progress)}`}
+                style={{ width: `${task.progress}%` }}
+              ></div>
+            </div>
+            <span className="text-xs text-gray-600">{task.progress}%</span>
+          </div>
+        );
+      
+      case 'duration':
+        return (
+          <span 
+            className="cursor-pointer hover:bg-gray-100 p-1 rounded block"
+            onClick={() => startEditing(task.id, 'duration')}
+          >
+            {task.duration} dias
+          </span>
+        );
+      
+      case 'estimatedHours':
+        return (
+          <span 
+            className="cursor-pointer hover:bg-gray-100 p-1 rounded block"
+            onClick={() => startEditing(task.id, 'estimatedHours')}
+          >
+            {task.estimatedHours ? `${task.estimatedHours}h` : '-'}
+          </span>
+        );
+      
+      case 'actualHours':
+        return (
+          <span 
+            className="cursor-pointer hover:bg-gray-100 p-1 rounded block"
+            onClick={() => startEditing(task.id, 'actualHours')}
+          >
+            {task.actualHours ? `${task.actualHours}h` : '-'}
+          </span>
+        );
+      
+      case 'storyPoints':
+        return (
+          <span 
+            className="cursor-pointer hover:bg-gray-100 p-1 rounded block"
+            onClick={() => startEditing(task.id, 'storyPoints')}
+          >
+            {task.storyPoints ? `${task.storyPoints} SP` : '-'}
+          </span>
+        );
+      
+      case 'priority':
+        return (
+          <span 
+            className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium cursor-pointer hover:opacity-80 ${
+              task.priority === 'Critical' ? 'bg-red-100 text-red-800' :
+              task.priority === 'High' ? 'bg-orange-100 text-orange-800' :
+              task.priority === 'Medium' ? 'bg-yellow-100 text-yellow-800' :
+              'bg-gray-100 text-gray-800'
+            }`}
+            onClick={() => startEditing(task.id, 'priority')}
+          >
+            {task.priority || 'Normal'}
+          </span>
+        );
+      
+      case 'workstream':
+        return (
+          <span 
+            className="cursor-pointer hover:bg-gray-100 p-1 rounded block"
+            onClick={() => startEditing(task.id, 'workstream')}
+          >
+            {task.workstream || '-'}
+          </span>
+        );
+      
+      case 'tags':
+        return task.tags && task.tags.length > 0 ? (
+          <div className="flex flex-wrap gap-1">
+            {task.tags.slice(0, 2).map((tag, index) => (
+              <span key={index} className="inline-flex items-center px-1.5 py-0.5 rounded text-xs bg-blue-100 text-blue-800">
+                {tag}
+              </span>
+            ))}
+            {task.tags.length > 2 && (
+              <span className="text-xs text-gray-500">+{task.tags.length - 2}</span>
+            )}
+          </div>
+        ) : '-';
+      
+      case 'actions':
+        return (
+          <div className="flex justify-center space-x-1">
+            {/* Botão de visualizar tarefa */}
+            <button
+              onClick={() => handleViewTask(task)}
+              className="p-1 rounded transition-colors text-blue-600 hover:text-blue-800 hover:bg-blue-50"
+              title="Visualizar detalhes da tarefa"
+            >
+              <EyeIcon className="w-3 h-3" />
+            </button>
+            
+            <button
+              onClick={() => indentTask(task.id)}
+              disabled={!canIndent(task.id)}
+              className={`p-1 rounded transition-colors ${
+                canIndent(task.id)
+                  ? 'text-green-600 hover:text-green-800 hover:bg-green-50'
+                  : 'text-gray-300 cursor-not-allowed'
+              }`}
+              title={
+                canIndent(task.id) 
+                  ? 'Tornar subtarefa' 
+                  : filteredTasks.findIndex(t => t.id === task.id) === 0 
+                    ? 'Não é possível indentar a primeira tarefa'
+                    : 'Máximo de 6 níveis de hierarquia atingido'
+              }
+            >
+              <ChevronRightIcon className="w-3 h-3" />
+            </button>
+            
+            <button
+              onClick={() => outdentTask(task.id)}
+              disabled={!canOutdent(task.id)}
+              className={`p-1 rounded transition-colors ${
+                canOutdent(task.id)
+                  ? 'text-red-600 hover:text-red-800 hover:bg-red-50'
+                  : 'text-gray-300 cursor-not-allowed'
+              }`}
+              title={
+                canOutdent(task.id) 
+                  ? 'Elevar na hierarquia' 
+                  : 'Tarefa já é órfã'
+              }
+            >
+              <ChevronLeftIcon className="w-3 h-3" />
+            </button>
+          </div>
+        );
+      
+      default:
+        return '-';
+    }
+  };
+
+  // Função para renderizar célula editável
+  const renderEditableCell = (task, columnId) => {
+    const currentValue = task[columnId === 'name' ? 'title' : columnId] || '';
+    
+    const handleKeyPress = (e) => {
+      if (e.key === 'Enter') {
+        handleCellChange(task.id, columnId === 'name' ? 'title' : columnId, e.target.value);
+        stopEditing();
+      } else if (e.key === 'Escape') {
+        stopEditing();
+      }
+    };
+
+    const handleBlur = (e) => {
+      handleCellChange(task.id, columnId === 'name' ? 'title' : columnId, e.target.value);
+      stopEditing();
+    };
+
+    switch (columnId) {
+      case 'name':
+        return (
+          <input
+            type="text"
+            defaultValue={currentValue}
+            onKeyDown={handleKeyPress}
+            onBlur={handleBlur}
+            autoFocus
+            className="w-full px-2 py-1 text-xs border border-blue-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+            style={{ marginLeft: `${(task.level || 0) * 16}px` }}
+          />
+        );
+      
+      case 'type':
+        return (
+          <select
+            defaultValue={currentValue}
+            onChange={(e) => {
+              handleCellChange(task.id, 'type', e.target.value);
+              stopEditing();
+            }}
+            onBlur={stopEditing}
+            autoFocus
+            className="w-full px-2 py-1 text-xs border border-blue-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+          >
+            <option value="Epic">Epic</option>
+            <option value="Story">Story</option>
+            <option value="Task">Task</option>
+            <option value="Bug">Bug</option>
+          </select>
+        );
+      
+      case 'status':
+        return (
+          <select
+            defaultValue={currentValue}
+            onChange={(e) => {
+              handleCellChange(task.id, 'status', e.target.value);
+              stopEditing();
+            }}
+            onBlur={stopEditing}
+            autoFocus
+            className="w-full px-2 py-1 text-xs border border-blue-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+          >
+            <option value="A Fazer">A Fazer</option>
+            <option value="Em Progresso">Em Progresso</option>
+            <option value="Concluído">Concluído</option>
+          </select>
+        );
+      
+      case 'priority':
+        return (
+          <select
+            defaultValue={currentValue}
+            onChange={(e) => {
+              handleCellChange(task.id, 'priority', e.target.value);
+              stopEditing();
+            }}
+            onBlur={stopEditing}
+            autoFocus
+            className="w-full px-2 py-1 text-xs border border-blue-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+          >
+            <option value="Normal">Normal</option>
+            <option value="Medium">Medium</option>
+            <option value="High">High</option>
+            <option value="Critical">Critical</option>
+          </select>
+        );
+      
+      case 'startDate':
+      case 'endDate':
+        return (
+          <input
+            type="date"
+            defaultValue={formatDateForInput(currentValue)}
+            onKeyDown={handleKeyPress}
+            onBlur={(e) => {
+              const newDate = e.target.value ? new Date(e.target.value) : null;
+              handleCellChange(task.id, columnId, newDate);
+              stopEditing();
+            }}
+            autoFocus
+            className="w-full px-2 py-1 text-xs border border-blue-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+          />
+        );
+      
+      case 'progress':
+        return (
+          <input
+            type="number"
+            min="0"
+            max="100"
+            defaultValue={currentValue}
+            onKeyDown={handleKeyPress}
+            onBlur={(e) => {
+              const value = Math.min(100, Math.max(0, parseInt(e.target.value) || 0));
+              handleCellChange(task.id, 'progress', value);
+              stopEditing();
+            }}
+            autoFocus
+            className="w-full px-2 py-1 text-xs border border-blue-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+          />
+        );
+      
+      case 'duration':
+      case 'estimatedHours':
+      case 'actualHours':
+      case 'storyPoints':
+        return (
+          <input
+            type="number"
+            min="0"
+            defaultValue={currentValue}
+            onKeyDown={handleKeyPress}
+            onBlur={(e) => {
+              const value = parseInt(e.target.value) || 0;
+              handleCellChange(task.id, columnId, value);
+              stopEditing();
+            }}
+            autoFocus
+            className="w-full px-2 py-1 text-xs border border-blue-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+          />
+        );
+      
+      case 'workstream':
+        return (
+          <input
+            type="text"
+            defaultValue={currentValue}
+            onKeyDown={handleKeyPress}
+            onBlur={handleBlur}
+            autoFocus
+            className="w-full px-2 py-1 text-xs border border-blue-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+          />
+        );
+      
+      default:
+        return currentValue;
+    }
+  };
+
+  // Função para renderizar célula de nova tarefa
+  const renderNewTaskCell = (columnId) => {
+    const handleKeyPress = (e) => {
+      if (e.key === 'Enter') {
+        saveNewTask();
+      } else if (e.key === 'Escape') {
+        cancelNewTask();
+      }
+    };
+
+    switch (columnId) {
+      case 'name':
+        return (
+          <input
+            type="text"
+            value={newTaskRow?.title || ''}
+            onChange={(e) => handleNewTaskChange('title', e.target.value)}
+            onKeyDown={handleKeyPress}
+            placeholder="Nome da tarefa..."
+            autoFocus
+            className="w-full px-2 py-1 text-xs border border-green-300 rounded focus:outline-none focus:ring-1 focus:ring-green-500"
+          />
+        );
+      
+      case 'id':
+        return (
+          <span className="text-xs text-gray-400 italic">
+            Auto-gerado
+          </span>
+        );
+      
+      case 'type':
+        return (
+          <select
+            value={newTaskRow?.type || 'Task'}
+            onChange={(e) => handleNewTaskChange('type', e.target.value)}
+            className="w-full px-2 py-1 text-xs border border-green-300 rounded focus:outline-none focus:ring-1 focus:ring-green-500"
+          >
+            <option value="Epic">Epic</option>
+            <option value="Story">Story</option>
+            <option value="Task">Task</option>
+            <option value="Bug">Bug</option>
+          </select>
+        );
+      
+      case 'status':
+        return (
+          <select
+            value={newTaskRow?.status || 'A Fazer'}
+            onChange={(e) => handleNewTaskChange('status', e.target.value)}
+            className="w-full px-2 py-1 text-xs border border-green-300 rounded focus:outline-none focus:ring-1 focus:ring-green-500"
+          >
+            <option value="A Fazer">A Fazer</option>
+            <option value="Em Progresso">Em Progresso</option>
+            <option value="Concluído">Concluído</option>
+          </select>
+        );
+      
+      case 'priority':
+        return (
+          <select
+            value={newTaskRow?.priority || 'Normal'}
+            onChange={(e) => handleNewTaskChange('priority', e.target.value)}
+            className="w-full px-2 py-1 text-xs border border-green-300 rounded focus:outline-none focus:ring-1 focus:ring-green-500"
+          >
+            <option value="Normal">Normal</option>
+            <option value="Medium">Medium</option>
+            <option value="High">High</option>
+            <option value="Critical">Critical</option>
+          </select>
+        );
+      
+      case 'startDate':
+        return (
+          <input
+            type="date"
+            value={newTaskRow?.startDate || ''}
+            onChange={(e) => handleNewTaskChange('startDate', e.target.value)}
+            onKeyDown={handleKeyPress}
+            className="w-full px-2 py-1 text-xs border border-green-300 rounded focus:outline-none focus:ring-1 focus:ring-green-500"
+          />
+        );
+      
+      case 'endDate':
+        return (
+          <input
+            type="date"
+            value={newTaskRow?.endDate || ''}
+            onChange={(e) => handleNewTaskChange('endDate', e.target.value)}
+            onKeyDown={handleKeyPress}
+            className="w-full px-2 py-1 text-xs border border-green-300 rounded focus:outline-none focus:ring-1 focus:ring-green-500"
+          />
+        );
+      
+      case 'progress':
+        return (
+          <input
+            type="number"
+            min="0"
+            max="100"
+            value={newTaskRow?.progress || 0}
+            onChange={(e) => handleNewTaskChange('progress', parseInt(e.target.value) || 0)}
+            onKeyDown={handleKeyPress}
+            className="w-full px-2 py-1 text-xs border border-green-300 rounded focus:outline-none focus:ring-1 focus:ring-green-500"
+          />
+        );
+      
+      case 'duration':
+        return (
+          <input
+            type="number"
+            min="1"
+            value={newTaskRow?.duration || 1}
+            onChange={(e) => handleNewTaskChange('duration', parseInt(e.target.value) || 1)}
+            onKeyDown={handleKeyPress}
+            className="w-full px-2 py-1 text-xs border border-green-300 rounded focus:outline-none focus:ring-1 focus:ring-green-500"
+          />
+        );
+      
+      case 'estimatedHours':
+        return (
+          <input
+            type="number"
+            min="0"
+            value={newTaskRow?.estimatedHours || ''}
+            onChange={(e) => handleNewTaskChange('estimatedHours', parseInt(e.target.value) || null)}
+            onKeyDown={handleKeyPress}
+            className="w-full px-2 py-1 text-xs border border-green-300 rounded focus:outline-none focus:ring-1 focus:ring-green-500"
+          />
+        );
+      
+      case 'storyPoints':
+        return (
+          <input
+            type="number"
+            min="0"
+            value={newTaskRow?.storyPoints || ''}
+            onChange={(e) => handleNewTaskChange('storyPoints', parseInt(e.target.value) || null)}
+            onKeyDown={handleKeyPress}
+            className="w-full px-2 py-1 text-xs border border-green-300 rounded focus:outline-none focus:ring-1 focus:ring-green-500"
+          />
+        );
+      
+      case 'workstream':
+        return (
+          <input
+            type="text"
+            value={newTaskRow?.workstream || ''}
+            onChange={(e) => handleNewTaskChange('workstream', e.target.value)}
+            onKeyDown={handleKeyPress}
+            placeholder="Workstream..."
+            className="w-full px-2 py-1 text-xs border border-green-300 rounded focus:outline-none focus:ring-1 focus:ring-green-500"
+          />
+        );
+      
+      case 'actions':
+        return (
+          <div className="flex justify-center space-x-1">
+            <button
+              onClick={saveNewTask}
+              className="p-1 rounded transition-colors text-green-600 hover:text-green-800 hover:bg-green-50"
+              title="Salvar tarefa"
+            >
+              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
+            </button>
+            <button
+              onClick={cancelNewTask}
+              className="p-1 rounded transition-colors text-red-600 hover:text-red-800 hover:bg-red-50"
+              title="Cancelar"
+            >
+              <XMarkIcon className="w-3 h-3" />
+            </button>
+          </div>
+        );
+      
+      default:
+        return '-';
+    }
+  };
+
+  // Função para indentar tarefa com animação
+  const indentTask = (taskId) => {
+    const task = projectTasks.find(t => t.id === taskId);
+    const taskIndex = projectTasks.findIndex(t => t.id === taskId);
+    
+    if (!task || taskIndex === 0) {
+      showFeedback('Não é possível indentar a primeira tarefa', 'error');
+      return;
+    }
+
+    const previousTask = projectTasks[taskIndex - 1];
+    const newLevel = Math.min((task.level || 0) + 1, 5); // Máximo 6 níveis (0-5)
+    
+    if (newLevel > 5) {
+      showFeedback('Máximo de 6 níveis de hierarquia permitidos', 'error');
+      return;
+    }
+
+    // Adicionar animação
+    setAnimatingTasks(prev => new Set([...prev, taskId]));
+    
+    setTimeout(() => {
+      updateTask(taskId, {
+        level: newLevel,
+        parentId: previousTask.id
+      });
+
+      updateTask(previousTask.id, {
+        hasChildren: true,
+        isExpanded: true
+      });
+
+      setAnimatingTasks(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(taskId);
+        return newSet;
+      });
+
+      showFeedback('Tarefa indentada com sucesso!', 'success');
+    }, 150);
+  };
+
+  // Função para desindentar tarefa com animação
+  const outdentTask = (taskId) => {
+    const task = projectTasks.find(t => t.id === taskId);
+    
+    if (!task || (task.level || 0) === 0) {
+      showFeedback('Tarefa já está no nível superior', 'error');
+      return;
+    }
+
+    // Adicionar animação
+    setAnimatingTasks(prev => new Set([...prev, taskId]));
+
+    setTimeout(() => {
+      const newLevel = Math.max((task.level || 0) - 1, 0);
+      
+      // Encontrar novo pai baseado na lógica do Microsoft Project
+      let newParentId = null;
+      if (newLevel > 0) {
+        const taskIndex = projectTasks.findIndex(t => t.id === taskId);
+        for (let i = taskIndex - 1; i >= 0; i--) {
+          if (projectTasks[i].level === newLevel - 1) {
+            newParentId = projectTasks[i].id;
+            break;
+          }
+        }
+      }
+      
+      updateTask(taskId, {
+        level: newLevel,
+        parentId: newParentId
+      });
+
+      setAnimatingTasks(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(taskId);
+        return newSet;
+      });
+
+      showFeedback('Tarefa elevada na hierarquia!', 'success');
+    }, 150);
+  };
+
+  // Função para mostrar feedback
+  const showFeedback = (message, type = 'info') => {
+    setFeedbackMessage({ text: message, type });
+    setTimeout(() => setFeedbackMessage(''), 3000);
+  };
+
+  // Funções para edição inline
+  const startEditing = (taskId, field) => {
+    setEditingCell({ taskId, field });
+  };
+
+  const stopEditing = () => {
+    setEditingCell(null);
+  };
+
+  const handleCellChange = (taskId, field, value) => {
+    const task = projectTasks.find(t => t.id === taskId);
+    if (task) {
+      const updatedData = { [field]: value };
+      updateTask(taskId, updatedData);
+      showFeedback('Tarefa atualizada!', 'success');
+    }
+  };
+
+  const cancelNewTask = () => {
+    setNewTaskRow(null);
+  };
+
+  const saveNewTask = () => {
+    if (!newTaskRow.title.trim()) {
+      showFeedback('Nome da tarefa é obrigatório!', 'error');
+      return;
+    }
+
+    const newTask = {
+      id: `TASK-${Date.now()}`,
+      projectId: projectId,
+      title: newTaskRow.title,
+      type: newTaskRow.type,
+      status: newTaskRow.status,
+      assignee: newTaskRow.assignee,
+      priority: newTaskRow.priority,
+      startDate: new Date(newTaskRow.startDate),
+      endDate: new Date(newTaskRow.endDate),
+      duration: parseInt(newTaskRow.duration) || 1,
+      progress: parseInt(newTaskRow.progress) || 0,
+      storyPoints: newTaskRow.storyPoints ? parseInt(newTaskRow.storyPoints) : null,
+      description: newTaskRow.description,
+      level: 0,
+      parentId: null,
+      estimatedHours: newTaskRow.estimatedHours ? parseInt(newTaskRow.estimatedHours) : null,
+      actualHours: null,
+      workstream: newTaskRow.workstream,
+      tags: [],
+      comments: [],
+      attachments: []
+    };
+    
+    addTask(newTask);
+    showFeedback('Tarefa criada com sucesso!', 'success');
+    setNewTaskRow(null);
+  };
+
+  const handleNewTaskChange = (field, value) => {
+    setNewTaskRow(prev => ({ ...prev, [field]: value }));
+  };
+
+  // Funções para drag-and-drop
+  const handleDragStart = (e, task, index) => {
+    setDraggedTask({ task, index });
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/html', e.target);
+    
+    // Adicionar classe visual ao elemento sendo arrastado
+    setTimeout(() => {
+      e.target.style.opacity = '0.5';
+    }, 0);
+  };
+
+  const handleDragEnd = (e) => {
+    e.target.style.opacity = '1';
+    setDraggedTask(null);
+    setDragOverIndex(null);
+  };
+
+  const handleDragOver = (e, index) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    setDragOverIndex(index);
+  };
+
+  const handleDragLeave = (e) => {
+    // Só remove o highlight se realmente saiu do elemento
+    if (!e.currentTarget.contains(e.relatedTarget)) {
+      setDragOverIndex(null);
+    }
+  };
+
+  const handleDrop = (e, dropIndex) => {
+    e.preventDefault();
+    
+    if (!draggedTask || draggedTask.index === dropIndex) {
+      setDragOverIndex(null);
+      return;
+    }
+
+    const newTasks = [...filteredTasks];
+    const draggedTaskData = newTasks[draggedTask.index];
+    
+    // Remove a tarefa da posição original
+    newTasks.splice(draggedTask.index, 1);
+    
+    // Insere na nova posição
+    newTasks.splice(dropIndex, 0, draggedTaskData);
+    
+    // Atualiza a ordem no store
+    updateTasksOrder(newTasks);
+    
+    setDraggedTask(null);
+    setDragOverIndex(null);
+    showFeedback('Ordem das tarefas atualizada!', 'success');
+  };
+
+  const handleDeleteTask = (taskId) => {
+    if (window.confirm('Tem certeza que deseja excluir esta tarefa?')) {
+      deleteTask(taskId);
+      showFeedback('Tarefa excluída com sucesso!', 'success');
+    }
+  };
+
+  // Função para visualizar detalhes da tarefa
+  const handleViewTask = (task) => {
+    // Navegar para a página de detalhes da tarefa
+    navigate(`/projects/tasks/${task.id}`);
+  };
+
+  // Função para verificar se pode indentar
+  const canIndent = (taskId) => {
+    const task = projectTasks.find(t => t.id === taskId);
+    const taskIndex = projectTasks.findIndex(t => t.id === taskId);
+    
+    return taskIndex > 0 && (task.level || 0) < 5; // Máximo 6 níveis (0-5)
+  };
+
+  // Função para verificar se pode desindentar
+  const canOutdent = (taskId) => {
+    const task = projectTasks.find(t => t.id === taskId);
+    return task && (task.level || 0) > 0;
+  };
+
+  // Componente de feedback visual
+  const FeedbackMessage = () => {
+    if (!feedbackMessage) return null;
+
+    const bgColor = feedbackMessage.type === 'success' ? 'bg-green-500' : 
+                   feedbackMessage.type === 'error' ? 'bg-red-500' : 'bg-blue-500';
+
+    return (
+      <div className={`fixed top-20 right-4 ${bgColor} text-white px-4 py-2 rounded-lg shadow-lg z-50 animate-slide-in-right`}>
+        <div className="flex items-center space-x-2">
+          <span className="text-sm font-medium">{feedbackMessage.text}</span>
+        </div>
+      </div>
+    );
+  };
+
+  // Filtrar tarefas por busca
+  const filteredTasks = useMemo(() => {
+    return projectTasks.filter(task =>
+      task.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      task.assignee?.name.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+  }, [projectTasks, searchTerm]);
+
+  // Análise de caminho crítico
+  const criticalPath = useMemo(() => {
+    return filteredTasks.filter(task => 
+      task.priority === 'High' || task.priority === 'Critical'
+    );
+  }, [filteredTasks]);
+
+  // Gerar timeline dinâmica baseada no nível de zoom
+  const generateTimeline = () => {
+    const startDate = new Date('2024-01-01'); // Corrigido para janeiro de 2024
+    const timeline = [];
+    
+    // Definir configurações por nível de zoom
+    const zoomConfigs = {
+      50: { // Zoom mínimo - Mensal
+        unit: 'month',
+        count: 3, // 3 meses: Jan, Fev, Mar 2024
+        width: 100,
+        labelFormat: (date) => date.toLocaleDateString('pt-BR', { month: 'short', year: 'numeric' }),
+        sublabelFormat: (date) => `${date.toLocaleDateString('pt-BR', { month: 'long' })}`
+      },
+      75: { // Zoom médio-baixo - Quinzenal
+        unit: 'week',
+        count: 12, // 12 semanas cobrindo Jan-Mar 2024
+        width: 75,
+        labelFormat: (date) => `Sem ${Math.ceil(date.getDate() / 7)}`,
+        sublabelFormat: (date) => date.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })
+      },
+      100: { // Zoom padrão - Semanal
+        unit: 'week',
+        count: 12, // 12 semanas cobrindo Jan-Mar 2024
+        width: 50,
+        labelFormat: (date, index) => `S${index + 1}`,
+        sublabelFormat: (date) => {
+          const day = date.getDate().toString().padStart(2, '0');
+          const month = date.toLocaleDateString('pt-BR', { month: 'short' });
+          return `${day}/${month}.`;
+        }
+      },
+      125: { // Zoom médio-alto - Semanal detalhado
+        unit: 'week',
+        count: 12, // 12 semanas cobrindo Jan-Mar 2024
+        width: 75,
+        labelFormat: (date, index) => `Semana ${index + 1}`,
+        sublabelFormat: (date) => {
+          const endDate = new Date(date);
+          endDate.setDate(date.getDate() + 6);
+          return `${date.getDate().toString().padStart(2, '0')} - ${endDate.getDate().toString().padStart(2, '0')}/${date.toLocaleDateString('pt-BR', { month: 'short' })}`;
+        }
+      },
+      150: { // Zoom alto - Diário (semanas)
+        unit: 'day',
+        count: 84, // 12 semanas * 7 dias
+        width: 25,
+        labelFormat: (date) => date.toLocaleDateString('pt-BR', { weekday: 'short' }),
+        sublabelFormat: (date) => date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })
+      },
+      175: { // Zoom muito alto - Diário detalhado
+        unit: 'day',
+        count: 84, // 12 semanas * 7 dias
+        width: 40,
+        labelFormat: (date) => date.toLocaleDateString('pt-BR', { weekday: 'long' }),
+        sublabelFormat: (date) => date.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: '2-digit' })
+      },
+      200: { // Zoom máximo - Diário completo
+        unit: 'day',
+        count: 84, // 12 semanas * 7 dias
+        width: 60,
+        labelFormat: (date) => date.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' }),
+        sublabelFormat: (date) => date.toLocaleDateString('pt-BR', { weekday: 'long' })
+      }
+    };
+    
+    // Encontrar configuração mais próxima do zoom atual
+    const zoomLevels = Object.keys(zoomConfigs).map(Number).sort((a, b) => a - b);
+    const currentZoomConfig = zoomConfigs[zoomLevels.find(level => level >= zoomLevel) || zoomLevels[zoomLevels.length - 1]];
+    
+    // Gerar timeline baseada na configuração
+    for (let i = 0; i < currentZoomConfig.count; i++) {
+      const currentDate = new Date(startDate);
+      
+      if (currentZoomConfig.unit === 'day') {
+        currentDate.setDate(startDate.getDate() + i);
+      } else if (currentZoomConfig.unit === 'week') {
+        currentDate.setDate(startDate.getDate() + (i * 7));
+      } else if (currentZoomConfig.unit === 'month') {
+        currentDate.setMonth(startDate.getMonth() + i);
+      }
+      
+      timeline.push({
+        id: i + 1,
+        label: currentZoomConfig.labelFormat(currentDate, i),
+        date: currentZoomConfig.sublabelFormat(currentDate, i),
+        width: currentZoomConfig.width,
+        unit: currentZoomConfig.unit
+      });
+    }
+    
+    return timeline;
+  };
+
+  const timeline = generateTimeline();
+
+  // Função para obter cor da barra baseada no status
+  const getBarColor = (status, progress) => {
+    if (status === 'Concluído' || progress === 100) return 'bg-green-500';
+    if (status === 'Em Progresso' && progress > 0) return 'bg-blue-500';
+    return 'bg-gray-400';
+  };
+
+  // Função para calcular posição da barra na timeline
+  const getBarPosition = (task, index) => {
+    if (!task.startDate) return 0;
+    
+    const taskStart = new Date(task.startDate);
+    const timelineStart = new Date('2024-01-01'); // Corrigido para janeiro de 2024
+    
+    // Calcular diferença baseada na unidade da timeline
+    const currentZoomConfig = getCurrentZoomConfig();
+    let position = 0;
+    
+    if (currentZoomConfig.unit === 'day') {
+      const diffTime = taskStart.getTime() - timelineStart.getTime();
+      const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+      position = Math.max(0, Math.min(diffDays, timeline.length - 1));
+    } else if (currentZoomConfig.unit === 'week') {
+      const diffTime = taskStart.getTime() - timelineStart.getTime();
+      const diffWeeks = Math.floor(diffTime / (1000 * 60 * 60 * 24 * 7));
+      position = Math.max(0, Math.min(diffWeeks, timeline.length - 1));
+    } else if (currentZoomConfig.unit === 'month') {
+      const diffMonths = (taskStart.getFullYear() - timelineStart.getFullYear()) * 12 + 
+                        (taskStart.getMonth() - timelineStart.getMonth());
+      position = Math.max(0, Math.min(diffMonths, timeline.length - 1));
+    }
+    
+    // Calcular posição em pixels
+    let pixelPosition = 0;
+    for (let i = 0; i < position; i++) {
+      pixelPosition += timeline[i]?.width || currentZoomConfig.width;
+    }
+    
+    return pixelPosition;
+  };
+
+  // Função para obter configuração atual de zoom
+  const getCurrentZoomConfig = () => {
+    const zoomConfigs = {
+      50: { unit: 'month', width: 100 },
+      75: { unit: 'week', width: 75 },
+      100: { unit: 'week', width: 50 },
+      125: { unit: 'week', width: 75 },
+      150: { unit: 'day', width: 25 },
+      175: { unit: 'day', width: 40 },
+      200: { unit: 'day', width: 60 }
+    };
+    
+    const zoomLevels = Object.keys(zoomConfigs).map(Number).sort((a, b) => a - b);
+    return zoomConfigs[zoomLevels.find(level => level >= zoomLevel) || zoomLevels[zoomLevels.length - 1]];
+  };
+
+  // Função para calcular largura da barra
+  const getBarWidth = (task) => {
+    const currentZoomConfig = getCurrentZoomConfig();
+    const duration = Math.max(task.duration || 1, 1);
+    
+    if (currentZoomConfig.unit === 'day') {
+      return duration * currentZoomConfig.width;
+    } else if (currentZoomConfig.unit === 'week') {
+      return Math.ceil(duration / 7) * currentZoomConfig.width;
+    } else if (currentZoomConfig.unit === 'month') {
+      return Math.ceil(duration / 30) * currentZoomConfig.width;
+    }
+    
+    return currentZoomConfig.width;
+  };
+
+  // Função para calcular posição da linha "Hoje"
+  const getTodayPosition = () => {
+    const today = new Date();
+    const timelineStart = new Date('2024-01-01'); // Corrigido para janeiro de 2024
+    const currentZoomConfig = getCurrentZoomConfig();
+    
+    let position = 0;
+    
+    if (currentZoomConfig.unit === 'day') {
+      const diffTime = today.getTime() - timelineStart.getTime();
+      const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+      position = Math.max(0, Math.min(diffDays, timeline.length - 1));
+    } else if (currentZoomConfig.unit === 'week') {
+      const diffTime = today.getTime() - timelineStart.getTime();
+      const diffWeeks = Math.floor(diffTime / (1000 * 60 * 60 * 24 * 7));
+      position = Math.max(0, Math.min(diffWeeks, timeline.length - 1));
+    } else if (currentZoomConfig.unit === 'month') {
+      const diffMonths = (today.getFullYear() - timelineStart.getFullYear()) * 12 + 
+                        (today.getMonth() - timelineStart.getMonth());
+      position = Math.max(0, Math.min(diffMonths, timeline.length - 1));
+    }
+    
+    // Calcular posição em pixels
+    let pixelPosition = 0;
+    for (let i = 0; i < position; i++) {
+      pixelPosition += timeline[i]?.width || currentZoomConfig.width;
+    }
+    
+    // Adicionar offset para posicionar no meio do período atual
+    pixelPosition += (timeline[position]?.width || currentZoomConfig.width) / 2;
+    
+    return pixelPosition;
+  };
+
+  // Função para obter rótulo do intervalo da timeline
+  const getTimelineRangeLabel = () => {
+    const startDate = new Date('2024-01-01'); // Corrigido para janeiro de 2024
+    const currentZoomConfig = getCurrentZoomConfig();
+    
+    if (currentZoomConfig.unit === 'day') {
+      const endDate = new Date(startDate);
+      endDate.setDate(startDate.getDate() + 83); // 84 dias (12 semanas)
+      return `${startDate.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })} - ${endDate.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' })}`;
+    } else if (currentZoomConfig.unit === 'week') {
+      const endDate = new Date(startDate);
+      endDate.setDate(startDate.getDate() + (11 * 7)); // 12 semanas
+      return `${startDate.toLocaleDateString('pt-BR', { month: 'short', year: 'numeric' })} - ${endDate.toLocaleDateString('pt-BR', { month: 'short', year: 'numeric' })}`;
+    } else if (currentZoomConfig.unit === 'month') {
+      const endDate = new Date(startDate);
+      endDate.setMonth(startDate.getMonth() + 2); // 3 meses
+      return `${startDate.toLocaleDateString('pt-BR', { month: 'short', year: 'numeric' })} - ${endDate.toLocaleDateString('pt-BR', { month: 'short', year: 'numeric' })}`;
+    }
+    
+    return 'Jan 2024 - Mar 2024'; // Corrigido para 2024
+  };
+
+  // Função para obter rótulo do nível de zoom
+  const getZoomLevelLabel = () => {
+    const currentZoomConfig = getCurrentZoomConfig();
+    
+    if (currentZoomConfig.unit === 'day') {
+      return 'Diário';
+    } else if (currentZoomConfig.unit === 'week') {
+      return 'Semanal';
+    } else if (currentZoomConfig.unit === 'month') {
+      return 'Mensal';
+    }
+    
+    return `${zoomLevel}%`;
+  };
+
+  // Função para exportar
+  const handleExport = async (format) => {
+    try {
+      showFeedback(`Preparando exportação em ${format}...`, 'info');
+      
+      if (format === 'PDF') {
+        await exportToPDF();
+      } else if (format === 'Excel') {
+        await exportToExcel();
+      } else if (format === 'PNG') {
+        await exportToPNG();
+      }
+      
+      showFeedback(`Cronograma exportado em ${format} com sucesso!`, 'success');
+    } catch (error) {
+      showFeedback(`Erro ao exportar em ${format}: ${error.message}`, 'error');
+    }
+  };
+
+  // Função para exportar para PDF
+  const exportToPDF = async () => {
+    const element = document.getElementById('gantt-export-content');
+    if (!element) {
+      throw new Error('Conteúdo não encontrado para exportação');
+    }
+
+    // Simular exportação PDF (implementação real requereria biblioteca como jsPDF)
+    const content = generateExportContent();
+    const blob = new Blob([content], { type: 'text/html' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `cronograma-${project.name}-${new Date().toISOString().split('T')[0]}.html`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
+  // Função para exportar para Excel
+  const exportToExcel = async () => {
+    const data = filteredTasks.map(task => ({
+      'Nome da Tarefa': task.title,
+      'Tipo': task.type || 'Task',
+      'Status': task.status,
+      'Responsável': task.assignee?.name || '',
+      'Data Início': task.startDate ? new Date(task.startDate).toLocaleDateString('pt-BR') : '',
+      'Progresso': `${task.progress}%`,
+      'Duração': `${task.duration} dias`,
+      'Nível': task.level || 0,
+      'Prioridade': task.priority || 'Normal'
+    }));
+
+    const csvContent = [
+      Object.keys(data[0]).join(','),
+      ...data.map(row => Object.values(row).map(value => `"${value}"`).join(','))
+    ].join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `cronograma-${project.name}-${new Date().toISOString().split('T')[0]}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
+  // Função para exportar para PNG
+  const exportToPNG = async () => {
+    // Simular captura de tela (implementação real requereria biblioteca como html2canvas)
+    const canvas = document.createElement('canvas');
+    canvas.width = 1200;
+    canvas.height = 800;
+    const ctx = canvas.getContext('2d');
+    
+    // Desenhar fundo
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    
+    // Desenhar título
+    ctx.fillStyle = '#000000';
+    ctx.font = '24px Arial';
+    ctx.fillText(`Cronograma - ${project.name}`, 50, 50);
+    
+    // Desenhar informações básicas
+    ctx.font = '14px Arial';
+    ctx.fillText(`Total de tarefas: ${filteredTasks.length}`, 50, 100);
+    ctx.fillText(`Tarefas críticas: ${criticalPath.length}`, 50, 120);
+    ctx.fillText(`Período: ${getTimelineRangeLabel()}`, 50, 140);
+    
+    // Converter para blob e download
+    canvas.toBlob((blob) => {
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `cronograma-${project.name}-${new Date().toISOString().split('T')[0]}.png`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    });
+  };
+
+  // Função para gerar conteúdo de exportação
+  const generateExportContent = () => {
+    return `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Cronograma - ${project.name}</title>
+        <style>
+          body { font-family: Arial, sans-serif; margin: 20px; }
+          .header { border-bottom: 2px solid #333; padding-bottom: 10px; margin-bottom: 20px; }
+          .task { margin: 5px 0; padding: 5px; border-left: 3px solid #007bff; }
+          .task.level-1 { margin-left: 20px; }
+          .task.level-2 { margin-left: 40px; }
+          .task.level-3 { margin-left: 60px; }
+          .task.level-4 { margin-left: 80px; }
+          .task.level-5 { margin-left: 100px; }
+          .stats { background: #f8f9fa; padding: 15px; border-radius: 5px; margin: 20px 0; }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <h1>Cronograma - ${project.name}</h1>
+          <p>Gerado em: ${new Date().toLocaleDateString('pt-BR')}</p>
+          <p>Período: ${getTimelineRangeLabel()}</p>
+        </div>
+        
+        <div class="stats">
+          <h3>Estatísticas do Projeto</h3>
+          <p><strong>Total de tarefas:</strong> ${filteredTasks.length}</p>
+          <p><strong>Tarefas críticas:</strong> ${criticalPath.length}</p>
+          <p><strong>Progresso médio:</strong> ${Math.round(filteredTasks.reduce((acc, task) => acc + task.progress, 0) / filteredTasks.length)}%</p>
+        </div>
+        
+        <div class="tasks">
+          <h3>Lista de Tarefas</h3>
+          ${filteredTasks.map(task => `
+            <div class="task level-${task.level || 0}">
+              <strong>${task.title}</strong><br>
+              Status: ${task.status} | Progresso: ${task.progress}% | 
+              Responsável: ${task.assignee?.name || 'Não atribuído'} |
+              Duração: ${task.duration} dias
+            </div>
+          `).join('')}
+        </div>
+      </body>
+      </html>
+    `;
+  };
+
+  // Função para gerar relatório
+  const handleReport = async (type) => {
+    try {
+      showFeedback(`Gerando relatório de ${type}...`, 'info');
+      
+      let reportData = '';
+      
+      if (type === 'Status') {
+        reportData = generateStatusReport();
+      } else if (type === 'Crítica') {
+        reportData = generateCriticalReport();
+      } else if (type === 'Recursos') {
+        reportData = generateResourceReport();
+      }
+      
+      // Criar e baixar relatório
+      const blob = new Blob([reportData], { type: 'text/html' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `relatorio-${type.toLowerCase()}-${project.name}-${new Date().toISOString().split('T')[0]}.html`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      
+      showFeedback(`Relatório de ${type} gerado com sucesso!`, 'success');
+    } catch (error) {
+      showFeedback(`Erro ao gerar relatório: ${error.message}`, 'error');
+    }
+  };
+
+  // Função para gerar relatório de status
+  const generateStatusReport = () => {
+    const statusCounts = filteredTasks.reduce((acc, task) => {
+      acc[task.status] = (acc[task.status] || 0) + 1;
+      return acc;
+    }, {});
+
+    return `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Relatório de Status - ${project.name}</title>
+        <style>
+          body { font-family: Arial, sans-serif; margin: 20px; }
+          .header { border-bottom: 2px solid #333; padding-bottom: 10px; margin-bottom: 20px; }
+          .chart { background: #f8f9fa; padding: 20px; border-radius: 5px; margin: 20px 0; }
+          .status-item { margin: 10px 0; padding: 10px; border-left: 4px solid #007bff; }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <h1>Relatório de Status - ${project.name}</h1>
+          <p>Gerado em: ${new Date().toLocaleDateString('pt-BR')}</p>
+        </div>
+        
+        <div class="chart">
+          <h3>Distribuição por Status</h3>
+          ${Object.entries(statusCounts).map(([status, count]) => `
+            <div class="status-item">
+              <strong>${status}:</strong> ${count} tarefas (${Math.round((count / filteredTasks.length) * 100)}%)
+            </div>
+          `).join('')}
+        </div>
+        
+        <div>
+          <h3>Progresso Geral</h3>
+          <p>Progresso médio: ${Math.round(filteredTasks.reduce((acc, task) => acc + task.progress, 0) / filteredTasks.length)}%</p>
+          <p>Tarefas concluídas: ${filteredTasks.filter(t => t.status === 'Concluído').length}</p>
+          <p>Tarefas em progresso: ${filteredTasks.filter(t => t.status === 'Em Progresso').length}</p>
+          <p>Tarefas pendentes: ${filteredTasks.filter(t => t.status === 'A Fazer').length}</p>
+        </div>
+      </body>
+      </html>
+    `;
+  };
+
+  // Função para gerar relatório crítico
+  const generateCriticalReport = () => {
+    return `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Análise Crítica - ${project.name}</title>
+        <style>
+          body { font-family: Arial, sans-serif; margin: 20px; }
+          .header { border-bottom: 2px solid #333; padding-bottom: 10px; margin-bottom: 20px; }
+          .critical-task { background: #fff3cd; border: 1px solid #ffeaa7; padding: 10px; margin: 10px 0; border-radius: 5px; }
+          .warning { background: #f8d7da; border: 1px solid #f5c6cb; padding: 15px; border-radius: 5px; margin: 20px 0; }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <h1>Análise Crítica - ${project.name}</h1>
+          <p>Gerado em: ${new Date().toLocaleDateString('pt-BR')}</p>
+        </div>
+        
+        <div class="warning">
+          <h3>⚠️ Tarefas Críticas Identificadas</h3>
+          <p>Total: ${criticalPath.length} tarefas requerem atenção especial</p>
+        </div>
+        
+        <div>
+          <h3>Lista de Tarefas Críticas</h3>
+          ${criticalPath.map(task => `
+            <div class="critical-task">
+              <strong>${task.title}</strong><br>
+              Status: ${task.status} | Progresso: ${task.progress}% | 
+              Responsável: ${task.assignee?.name || 'Não atribuído'}<br>
+              Prioridade: ${task.priority} | Duração: ${task.duration} dias
+            </div>
+          `).join('')}
+        </div>
+        
+        <div>
+          <h3>Recomendações</h3>
+          <ul>
+            <li>Monitorar diariamente as tarefas críticas</li>
+            <li>Garantir recursos adequados para tarefas de alta prioridade</li>
+            <li>Considerar realocação de recursos se necessário</li>
+            <li>Revisar dependências entre tarefas críticas</li>
+          </ul>
+        </div>
+      </body>
+      </html>
+    `;
+  };
+
+  // Função para gerar relatório de recursos
+  const generateResourceReport = () => {
+    const resourceCounts = filteredTasks.reduce((acc, task) => {
+      const assignee = task.assignee?.name || 'Não atribuído';
+      if (!acc[assignee]) {
+        acc[assignee] = { total: 0, completed: 0, inProgress: 0, pending: 0 };
+      }
+      acc[assignee].total++;
+      if (task.status === 'Concluído') acc[assignee].completed++;
+      else if (task.status === 'Em Progresso') acc[assignee].inProgress++;
+      else acc[assignee].pending++;
+      return acc;
+    }, {});
+
+    return `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Relatório de Recursos - ${project.name}</title>
+        <style>
+          body { font-family: Arial, sans-serif; margin: 20px; }
+          .header { border-bottom: 2px solid #333; padding-bottom: 10px; margin-bottom: 20px; }
+          .resource { background: #f8f9fa; padding: 15px; margin: 10px 0; border-radius: 5px; border-left: 4px solid #007bff; }
+          table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+          th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+          th { background-color: #f2f2f2; }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <h1>Relatório de Recursos - ${project.name}</h1>
+          <p>Gerado em: ${new Date().toLocaleDateString('pt-BR')}</p>
+        </div>
+        
+        <table>
+          <thead>
+            <tr>
+              <th>Recurso</th>
+              <th>Total de Tarefas</th>
+              <th>Concluídas</th>
+              <th>Em Progresso</th>
+              <th>Pendentes</th>
+              <th>Taxa de Conclusão</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${Object.entries(resourceCounts).map(([name, stats]) => `
+              <tr>
+                <td><strong>${name}</strong></td>
+                <td>${stats.total}</td>
+                <td>${stats.completed}</td>
+                <td>${stats.inProgress}</td>
+                <td>${stats.pending}</td>
+                <td>${Math.round((stats.completed / stats.total) * 100)}%</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+        
+        <div>
+          <h3>Análise de Carga de Trabalho</h3>
+          ${Object.entries(resourceCounts).map(([name, stats]) => `
+            <div class="resource">
+              <strong>${name}</strong><br>
+              Carga total: ${stats.total} tarefas<br>
+              Performance: ${Math.round((stats.completed / stats.total) * 100)}% de conclusão<br>
+              Status: ${stats.inProgress > 0 ? 'Ativo' : 'Disponível'}
+            </div>
+          `).join('')}
+        </div>
+      </body>
+      </html>
+    `;
+  };
+
+  if (!project) {
+    return (
+      <div className="p-6">
+        <div className="text-center">
+          <h2 className="text-2xl font-bold text-gray-900">Projeto não encontrado</h2>
+          <button
+            onClick={() => navigate('/projects')}
+            className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+          >
+            Voltar para Projetos
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="h-screen flex flex-col bg-gray-50">
+      {/* Componente de feedback */}
+      <FeedbackMessage />
+      
+      {/* Header fixo */}
+      <div className="sticky top-0 z-50 bg-white border-b border-gray-200 px-4 py-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-3">
+            <button
+              onClick={() => navigate(`/projects/${projectId}`)}
+              className="p-1.5 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
+              title="Voltar"
+            >
+              <ArrowLeftIcon className="w-4 h-4" />
+            </button>
+            
+            <div>
+              <h1 className="text-lg font-semibold text-gray-900">{project.name}</h1>
+              <p className="text-xs text-gray-600">
+                Período: Semana 4 de maio de 2025 - Semana 1 de outubro de 2025 • {criticalPath.length} tarefas críticas
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center space-x-1 max-w-md">
+            {/* Campo de busca compacto */}
+            <div className="relative">
+              <MagnifyingGlassIcon className="w-3 h-3 absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-400" />
+              <input
+                type="text"
+                placeholder="Buscar..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-16 sm:w-20 lg:w-24 pl-5 pr-1 py-1 text-xs border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+            </div>
+
+            {/* Alternância Lista/Gantt */}
+            <div className="flex border border-gray-300 rounded-lg overflow-hidden">
+              <button
+                onClick={() => setViewMode('list')}
+                className={`p-1 transition-colors ${
+                  viewMode === 'list'
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-white text-gray-700 hover:bg-gray-50'
+                }`}
+                title="Visão Lista"
+              >
+                <ListBulletIcon className="w-3 h-3" />
+              </button>
+              <button
+                onClick={() => setViewMode('gantt')}
+                className={`p-1 transition-colors ${
+                  viewMode === 'gantt'
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-white text-gray-700 hover:bg-gray-50'
+                }`}
+                title="Visão Gantt"
+              >
+                <ChartBarIcon className="w-3 h-3" />
+              </button>
+            </div>
+
+            {/* Controles de zoom e timeline no header */}
+            <div className="flex items-center space-x-3">
+              {/* Controles de zoom aprimorados */}
+              <div className="flex items-center space-x-2 bg-gray-100 rounded-lg px-3 py-1">
+                <button
+                  onClick={() => setZoomLevel(Math.max(50, zoomLevel - 25))}
+                  className="p-1 text-gray-600 hover:text-gray-900 hover:bg-white rounded transition-colors"
+                  title="Diminuir zoom"
+                  disabled={zoomLevel <= 50}
+                >
+                  <MinusIcon className="w-3 h-3" />
+                </button>
+                
+                {/* Slider de zoom */}
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="range"
+                    min="50"
+                    max="200"
+                    step="25"
+                    value={zoomLevel}
+                    onChange={(e) => setZoomLevel(parseInt(e.target.value))}
+                    className="w-16 h-1 bg-gray-300 rounded-lg appearance-none cursor-pointer slider"
+                    title={`Zoom: ${zoomLevel}%`}
+                  />
+                  <span className="text-xs font-medium text-gray-700 min-w-[2.5rem] text-center">
+                    {getZoomLevelLabel()}
+                  </span>
+                </div>
+                
+                <button
+                  onClick={() => setZoomLevel(Math.min(200, zoomLevel + 25))}
+                  className="p-1 text-gray-600 hover:text-gray-900 hover:bg-white rounded transition-colors"
+                  title="Aumentar zoom"
+                  disabled={zoomLevel >= 200}
+                >
+                  <PlusIcon className="w-3 h-3" />
+                </button>
+              </div>
+
+              {/* Menu de opções */}
+              <div className="relative group">
+                <button className="p-1 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors">
+                  <EllipsisVerticalIcon className="w-3 h-3" />
+                </button>
+                
+                <div className="absolute right-0 top-full mt-1 w-48 bg-white border border-gray-200 rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-10">
+                  <div className="py-1">
+                    <button
+                      onClick={() => handleExport('PDF')}
+                      className="w-full px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center space-x-2"
+                    >
+                      <DocumentArrowDownIcon className="w-4 h-4" />
+                      <span>Exportar PDF</span>
+                    </button>
+                    <button
+                      onClick={() => handleExport('Excel')}
+                      className="w-full px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center space-x-2"
+                    >
+                      <DocumentArrowDownIcon className="w-4 h-4" />
+                      <span>Exportar Excel</span>
+                    </button>
+                    <button
+                      onClick={() => handleExport('PNG')}
+                      className="w-full px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center space-x-2"
+                    >
+                      <DocumentArrowDownIcon className="w-4 h-4" />
+                      <span>Exportar PNG</span>
+                    </button>
+                    <hr className="my-1" />
+                    <button
+                      onClick={() => handleReport('Status')}
+                      className="w-full px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center space-x-2"
+                    >
+                      <ChartBarIcon className="w-4 h-4" />
+                      <span>Relatório de Status</span>
+                    </button>
+                    <button
+                      onClick={() => handleReport('Crítica')}
+                      className="w-full px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center space-x-2"
+                    >
+                      <ExclamationTriangleIcon className="w-4 h-4" />
+                      <span>Análise Crítica</span>
+                    </button>
+                    <button
+                      onClick={() => handleReport('Recursos')}
+                      className="w-full px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center space-x-2"
+                    >
+                      <UserGroupIcon className="w-4 h-4" />
+                      <span>Relatório de Recursos</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Conteúdo principal */}
+      <div className="flex-1 overflow-hidden">
+        {viewMode === 'list' ? (
+          // Visão Lista
+          <div className="h-full flex flex-col overflow-hidden">
+            {/* Header da visão lista - fixo */}
+            <div className="flex items-center justify-between p-6 pb-4 flex-shrink-0 bg-gray-50">
+              <h3 className="text-lg font-semibold text-gray-900">Lista de Tarefas</h3>
+              <div className="flex items-center space-x-2">
+                <button
+                  onClick={() => setShowColumnConfig(!showColumnConfig)}
+                  className="flex items-center space-x-2 px-3 py-2 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+                  title="Configurar colunas"
+                >
+                  <AdjustmentsHorizontalIcon className="w-4 h-4" />
+                  <span>Colunas</span>
+                </button>
+              </div>
+            </div>
+
+            <div className="flex-1 mx-6 mb-6 bg-white rounded-lg shadow flex flex-col relative overflow-hidden">
+              {/* Modal de configuração de colunas */}
+              {showColumnConfig && (
+                <div className="absolute top-0 right-0 z-10 mt-12 mr-4 w-80 bg-white rounded-lg shadow-lg border border-gray-200 p-4">
+                  <div className="flex items-center justify-between mb-4">
+                    <h4 className="text-sm font-semibold text-gray-900">Configurar Colunas</h4>
+                    <button
+                      onClick={() => setShowColumnConfig(false)}
+                      className="p-1 text-gray-400 hover:text-gray-600 rounded"
+                    >
+                      <XMarkIcon className="w-4 h-4" />
+                    </button>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    {getVisibleColumnsData().map((column) => (
+                      <div key={column.id} className="flex items-center">
+                        <input
+                          type="checkbox"
+                          id={`column-${column.id}`}
+                          checked={column.visible}
+                          onChange={() => toggleColumnVisibility(column.id)}
+                          className="mr-2"
+                        />
+                        <label htmlFor={`column-${column.id}`} className="text-sm text-gray-700">
+                          {column.label}
+                        </label>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Conteúdo principal */}
+              {viewMode === 'list' ? (
+                // Visão Lista
+                <div className="h-full flex flex-col bg-white">
+                  {/* Header da página */}
+                  <div className="flex-shrink-0 p-6 border-b border-gray-200">
+                    <h3 className="text-lg font-semibold text-gray-900">Lista de Tarefas</h3>
+                  </div>
+
+                  {/* Filtros */}
+                  {showFilters && (
+                    <div className="flex-shrink-0 p-4 bg-gray-50 border-b border-gray-200">
+                      <div className="flex flex-wrap gap-4">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                          <select 
+                            value={filters.status} 
+                            onChange={(e) => setFilters({...filters, status: e.target.value})}
+                            className="border border-gray-300 rounded-md px-3 py-2 text-sm"
+                          >
+                            <option value="">Todos</option>
+                            <option value="A Fazer">A Fazer</option>
+                            <option value="Em Progresso">Em Progresso</option>
+                            <option value="Concluído">Concluído</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Tipo</label>
+                          <select 
+                            value={filters.type} 
+                            onChange={(e) => setFilters({...filters, type: e.target.value})}
+                            className="border border-gray-300 rounded-md px-3 py-2 text-sm"
+                          >
+                            <option value="">Todos</option>
+                            <option value="Epic">Epic</option>
+                            <option value="Story">Story</option>
+                            <option value="Task">Task</option>
+                            <option value="Bug">Bug</option>
+                          </select>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Container da tabela com rolagem horizontal */}
+                  <div className="flex-1 overflow-hidden">
+                    <div className="h-full overflow-auto">
+                      <table className="min-w-full divide-y divide-gray-200">
+                        {/* Header da tabela */}
+                        <thead className="bg-gray-50 sticky top-0 z-10">
+                          <tr>
+                            <th className="w-24 px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              Ações
+                            </th>
+                            <th className="w-32 px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              ID
+                            </th>
+                            <th className="w-80 px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              Nome da Tarefa
+                            </th>
+                            <th className="w-32 px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              Tipo
+                            </th>
+                            <th className="w-32 px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              Status
+                            </th>
+                            <th className="w-32 px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              Responsável
+                            </th>
+                            <th className="w-32 px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              Data Início
+                            </th>
+                            <th className="w-32 px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              Progresso
+                            </th>
+                          </tr>
+                        </thead>
+                        
+                        {/* Corpo da tabela */}
+                        <tbody className="bg-white divide-y divide-gray-200">
+                          {filteredTasks.map((task, index) => (
+                            <tr
+                              key={task.id}
+                              className={`hover:bg-gray-50 ${draggedTask?.id === task.id ? 'opacity-50' : ''} ${
+                                dragOverIndex === index ? 'border-t-2 border-blue-500' : ''
+                              }`}
+                              draggable
+                              onDragStart={(e) => handleDragStart(e, task)}
+                              onDragOver={(e) => handleDragOver(e, index)}
+                              onDragLeave={handleDragLeave}
+                              onDrop={(e) => handleDrop(e, index)}
+                            >
+                              <td className="w-24 px-3 py-4 whitespace-nowrap text-sm">
+                                {renderCell(task, 'actions')}
+                              </td>
+                              <td className="w-32 px-3 py-4 whitespace-nowrap text-sm">
+                                {renderCell(task, 'id')}
+                              </td>
+                              <td className="w-80 px-3 py-4 whitespace-nowrap text-sm" style={{ paddingLeft: `${12 + (task.level || 0) * 20}px` }}>
+                                {renderCell(task, 'name')}
+                              </td>
+                              <td className="w-32 px-3 py-4 whitespace-nowrap text-sm">
+                                {renderCell(task, 'type')}
+                              </td>
+                              <td className="w-32 px-3 py-4 whitespace-nowrap text-sm">
+                                {renderCell(task, 'status')}
+                              </td>
+                              <td className="w-32 px-3 py-4 whitespace-nowrap text-sm">
+                                {renderCell(task, 'assignee')}
+                              </td>
+                              <td className="w-32 px-3 py-4 whitespace-nowrap text-sm">
+                                {renderCell(task, 'startDate')}
+                              </td>
+                              <td className="w-32 px-3 py-4 whitespace-nowrap text-sm">
+                                {renderCell(task, 'progress')}
+                              </td>
+                            </tr>
+                          ))}
+                          
+                          {/* Linha para nova tarefa */}
+                          {newTaskRow && (
+                            <tr className="bg-green-50">
+                              <td className="w-24 px-3 py-4 whitespace-nowrap text-sm">
+                                <div className="flex space-x-1">
+                                  <button
+                                    onClick={saveNewTask}
+                                    className="p-1 text-green-600 hover:text-green-800 hover:bg-green-100 rounded transition-colors"
+                                    title="Salvar tarefa"
+                                  >
+                                    <CheckIcon className="w-3 h-3" />
+                                  </button>
+                                  <button
+                                    onClick={cancelNewTask}
+                                    className="p-1 text-red-600 hover:text-red-800 hover:bg-red-100 rounded transition-colors"
+                                    title="Cancelar"
+                                  >
+                                    <XMarkIcon className="w-3 h-3" />
+                                  </button>
+                                </div>
+                              </td>
+                              <td className="w-32 px-3 py-4 whitespace-nowrap text-sm">
+                                {renderNewTaskCell('id')}
+                              </td>
+                              <td className="w-80 px-3 py-4 whitespace-nowrap text-sm">
+                                {renderNewTaskCell('name')}
+                              </td>
+                              <td className="w-32 px-3 py-4 whitespace-nowrap text-sm">
+                                {renderNewTaskCell('type')}
+                              </td>
+                              <td className="w-32 px-3 py-4 whitespace-nowrap text-sm">
+                                {renderNewTaskCell('status')}
+                              </td>
+                              <td className="w-32 px-3 py-4 whitespace-nowrap text-sm">
+                                {renderNewTaskCell('assignee')}
+                              </td>
+                              <td className="w-32 px-3 py-4 whitespace-nowrap text-sm">
+                                {renderNewTaskCell('startDate')}
+                              </td>
+                              <td className="w-32 px-3 py-4 whitespace-nowrap text-sm">
+                                {renderNewTaskCell('progress')}
+                              </td>
+                            </tr>
+                          )}
+                          
+                          {/* Linha para adicionar nova tarefa */}
+                          {!newTaskRow && (
+                            <tr 
+                              className="hover:bg-gray-50 cursor-pointer"
+                              onClick={() => setNewTaskRow({ name: '', type: 'Task', status: 'A Fazer' })}
+                            >
+                              <td className="w-24 px-3 py-4 whitespace-nowrap text-sm"></td>
+                              <td className="w-32 px-3 py-4 whitespace-nowrap text-sm"></td>
+                              <td className="w-80 px-3 py-4 whitespace-nowrap text-sm text-gray-400 italic">
+                                Clique para adicionar nova tarefa...
+                              </td>
+                              <td className="w-32 px-3 py-4 whitespace-nowrap text-sm"></td>
+                              <td className="w-32 px-3 py-4 whitespace-nowrap text-sm"></td>
+                              <td className="w-32 px-3 py-4 whitespace-nowrap text-sm"></td>
+                              <td className="w-32 px-3 py-4 whitespace-nowrap text-sm"></td>
+                              <td className="w-32 px-3 py-4 whitespace-nowrap text-sm"></td>
+                            </tr>
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                // Visão Gantt
+                <div className="h-full flex">
+                  {/* Lista de tarefas fixa à esquerda */}
+                  <div className="w-80 bg-white border-r border-gray-200 flex-shrink-0 flex flex-col">
+              <div className="border-b border-gray-200 bg-gray-50 flex-shrink-0" style={{ height: '48px' }}>
+                <div className="p-3 h-full flex items-center">
+                  <h3 className="font-medium text-gray-900 text-sm">Tarefas</h3>
+                </div>
+              </div>
+              
+              <div className="flex-1 overflow-hidden">
+                <div 
+                  id="tasks-container"
+                  className="overflow-y-auto overflow-x-hidden" 
+                  style={{ height: 'calc(100vh - 200px)' }}
+                  onScroll={(e) => {
+                    // Sincronizar scroll vertical com a timeline
+                    const ganttContainer = document.getElementById('gantt-container');
+                    if (ganttContainer) {
+                      ganttContainer.scrollTop = e.target.scrollTop;
+                    }
+                  }}
+                >
+                  {filteredTasks.map((task, index) => (
+                    <div
+                      key={task.id}
+                      className={`border-b border-gray-100 hover:bg-gray-50 group relative flex items-center transition-all duration-300 ${
+                        animatingTasks.has(task.id) ? 'transform scale-105 bg-blue-50' : ''
+                      }`}
+                      style={{ 
+                        height: '36px', // Altura reduzida de 48px para 36px
+                        minHeight: '36px'
+                      }}
+                    >
+                      <div 
+                        style={{ 
+                          marginLeft: `${(task.level || 0) * 16}px`,
+                          transition: 'margin-left 0.3s ease-in-out'
+                        }} 
+                        className="flex items-center justify-between w-full px-2"
+                      >
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between">
+                            <p className={`text-xs truncate transition-all duration-200 ${
+                              task.level === 0 ? 'font-semibold' : ''
+                            } ${animatingTasks.has(task.id) ? 'text-blue-600' : ''}`}>
+                              {task.title}
+                            </p>
+                            {task.assignee && (
+                              <div className="w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center text-white text-xs font-medium ml-2 flex-shrink-0 transition-transform duration-200 hover:scale-110">
+                                {task.assignee.name.split(' ').map(n => n[0]).join('').toUpperCase()}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                        
+                        {/* Botões de indentação que aparecem no hover */}
+                        <div className="opacity-0 group-hover:opacity-100 transition-all duration-200 flex space-x-1 ml-2">
+                          {/* Botão de visualizar tarefa */}
+                          <button
+                            onClick={() => handleViewTask(task)}
+                            className="p-1 rounded transition-all duration-200 text-blue-600 hover:text-blue-800 hover:bg-blue-50 hover:scale-110"
+                            title="Visualizar detalhes da tarefa"
+                            aria-label="Visualizar tarefa"
+                          >
+                            <EyeIcon className="w-3 h-3" />
+                          </button>
+                          
+                          <button
+                            onClick={() => indentTask(task.id)}
+                            disabled={!canIndent(task.id)}
+                            className={`p-1 rounded transition-all duration-200 ${
+                              canIndent(task.id)
+                                ? 'text-green-600 hover:text-green-800 hover:bg-green-50 hover:scale-110'
+                                : 'text-gray-300 cursor-not-allowed opacity-30'
+                            }`}
+                            title={
+                              canIndent(task.id) 
+                                ? `Tornar subtarefa de "${projectTasks[projectTasks.findIndex(t => t.id === task.id) - 1]?.title || 'tarefa anterior'}"` 
+                                : filteredTasks.findIndex(t => t.id === task.id) === 0 
+                                  ? 'Não é possível indentar a primeira tarefa'
+                                  : 'Máximo de 6 níveis de hierarquia atingido'
+                            }
+                            aria-label="Indentar tarefa"
+                          >
+                            <ChevronRightIcon className="w-3 h-3" />
+                          </button>
+                          
+                          <button
+                            onClick={() => outdentTask(task.id)}
+                            disabled={!canOutdent(task.id)}
+                            className={`p-1 rounded transition-all duration-200 ${
+                              canOutdent(task.id)
+                                ? 'text-red-600 hover:text-red-800 hover:bg-red-50 hover:scale-110'
+                                : 'text-gray-300 cursor-not-allowed opacity-30'
+                            }`}
+                            title={
+                              canOutdent(task.id) 
+                                ? `Elevar tarefa para nível ${(task.level || 0) - 1}` 
+                                : 'Tarefa já está no nível superior'
+                            }
+                            aria-label="Desindentar tarefa"
+                          >
+                            <ChevronLeftIcon className="w-3 h-3" />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Timeline do Gantt */}
+            <div className="flex-1 overflow-hidden flex flex-col">
+              {/* Cabeçalho da timeline fixo */}
+              <div className="border-b border-gray-200 bg-gray-50 flex-shrink-0" style={{ height: '48px' }}>
+                <div 
+                  id="timeline-header"
+                  className="overflow-x-auto overflow-y-hidden h-full"
+                  style={{ 
+                    maxWidth: 'calc(100vw - 664px)',
+                    minWidth: '400px'
+                  }}
+                  onScroll={(e) => {
+                    // Sincronizar scroll horizontal com a área das barras
+                    const ganttContainer = document.getElementById('gantt-container');
+                    if (ganttContainer) {
+                      ganttContainer.scrollLeft = e.target.scrollLeft;
+                    }
+                  }}
+                >
+                  <div className="flex p-3 h-full items-center" style={{ width: `${timeline.reduce((acc, item) => acc + item.width, 0)}px` }}>
+                    {timeline.map((period) => (
+                      <div
+                        key={period.id}
+                        className="flex-shrink-0 text-center border-r border-gray-200 last:border-r-0"
+                        style={{ width: `${period.width}px` }}
+                      >
+                        <div className="text-xs font-medium text-gray-900">{period.label}</div>
+                        <div className="text-xs text-gray-500 mt-1">{period.date}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* Área das barras do Gantt */}
+              <div className="flex-1 overflow-hidden">
+                <div 
+                  id="gantt-container"
+                  className="relative overflow-auto"
+                  style={{ 
+                    height: 'calc(100vh - 200px)',
+                    maxWidth: 'calc(100vw - 664px)',
+                    minWidth: '400px'
+                  }}
+                  onScroll={(e) => {
+                    // Sincronizar scroll horizontal com o cabeçalho
+                    const timelineHeader = document.getElementById('timeline-header');
+                    if (timelineHeader && e.target.scrollLeft !== timelineHeader.scrollLeft) {
+                      timelineHeader.scrollLeft = e.target.scrollLeft;
+                    }
+                    
+                    // Sincronizar scroll vertical com a lista de tarefas
+                    const tasksContainer = document.getElementById('tasks-container');
+                    if (tasksContainer && e.target.scrollTop !== tasksContainer.scrollTop) {
+                      tasksContainer.scrollTop = e.target.scrollTop;
+                    }
+                  }}
+                >
+                  <div style={{ width: `${timeline.reduce((acc, item) => acc + item.width, 0)}px`, height: `${filteredTasks.length * 36}px` }}>
+                    {/* Grid de fundo */}
+                    <div className="absolute inset-0 flex">
+                      {timeline.map((period) => (
+                        <div
+                          key={period.id}
+                          className="border-r border-gray-100 last:border-r-0"
+                          style={{ width: `${period.width}px` }}
+                        ></div>
+                      ))}
+                    </div>
+
+                    {/* Linhas horizontais para separar tarefas */}
+                    <div className="absolute inset-0">
+                      {filteredTasks.map((_, index) => (
+                        <div
+                          key={index}
+                          className="absolute border-b border-gray-100"
+                          style={{
+                            top: `${(index + 1) * 36}px`,
+                            left: 0,
+                            right: 0,
+                            height: '1px'
+                          }}
+                        ></div>
+                      ))}
+                    </div>
+
+                    {/* Linha "Hoje" */}
+                    <div
+                      className="absolute top-0 bottom-0 w-0.5 bg-red-500 z-10"
+                      style={{ left: `${getTodayPosition()}px` }}
+                    >
+                      <div className="absolute -top-2 -left-2 w-3 h-3 bg-red-500 rounded-full"></div>
+                      <div className="absolute -top-6 -left-4 text-xs text-red-600 font-medium">Hoje</div>
+                    </div>
+
+                    {/* Barras das tarefas */}
+                    {filteredTasks.map((task, index) => {
+                      const barPosition = getBarPosition(task, index);
+                      const barWidth = getBarWidth(task);
+                      const isCritical = criticalPath.includes(task);
+                      
+                      return (
+                        <div
+                          key={task.id}
+                          className="absolute flex items-center"
+                          style={{
+                            top: `${index * 36 + 10}px`, // Centralizado na linha de 36px
+                            left: `${barPosition}px`, // Usar posição em pixels diretamente
+                            height: '16px'
+                          }}
+                        >
+                          {/* Barra da tarefa */}
+                          <div
+                            className={`relative rounded ${getBarColor(task.status, task.progress)} flex items-center px-2`}
+                            style={{
+                              width: `${barWidth}px`, // Usar largura em pixels diretamente
+                              height: `${task.level === 0 ? '16px' : task.level === 1 ? '14px' : '12px'}`,
+                              opacity: task.level === 0 ? 1 : task.level === 1 ? 0.9 : 0.8
+                            }}
+                          >
+                            {/* Indicador de caminho crítico */}
+                            {isCritical && (
+                              <div className="absolute -right-1 -top-1 w-2 h-2 bg-red-500 rounded-full border border-white"></div>
+                            )}
+                            
+                            {/* Texto da tarefa (truncado) */}
+                            <span className="text-xs text-white font-medium truncate">
+                              {task.title.length > 15 ? `${task.title.substring(0, 12)}...` : task.title}
+                            </span>
+                            
+                            {/* Indicador de progresso */}
+                            <span className="ml-auto text-xs text-white opacity-90">
+                              {task.progress}%
+                            </span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
+    </div>
+  );
+};
+
+export default ProjectGantt;
+
