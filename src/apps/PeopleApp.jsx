@@ -1,83 +1,83 @@
 import React from 'react';
 import { Routes, Route } from 'react-router-dom';
+import ModuleLayout from '../components/ModuleLayout';
 import PeopleDashboard from './pages/PeopleDashboard';
 import BasesManagement from './pages/BasesManagement';
 import CalendarsManagement from './pages/CalendarsManagement';
 import PeopleManagement from './pages/PeopleManagement';
 import TeamsManagement from './pages/TeamsManagement';
 import ResourceUsagePanel from './pages/ResourceUsagePanel';
-import Sidebar from '../components/Sidebar';
 import { 
+  HomeIcon,
   UsersIcon, 
   BuildingOfficeIcon, 
   CalendarDaysIcon,
   UserGroupIcon,
-  ChartBarIcon,
-  HomeIcon
+  ChartBarIcon
 } from '@heroicons/react/24/outline';
 
 const PeopleApp = () => {
-  const sidebarItems = [
-    {
-      name: 'Dashboard',
-      href: '/people',
-      icon: HomeIcon,
-      current: false
+  // Configuração do módulo
+  const moduleConfig = {
+    title: 'Pessoas & Recursos',
+    subtitle: 'Gestão de equipes',
+    icon: UsersIcon,
+    bgColor: 'bg-purple-100',
+    iconColor: 'text-purple-600',
+    activeColor: 'bg-purple-50 text-purple-700',
+    activeBorder: 'border-purple-600',
+    activeIconColor: 'text-purple-600'
+  };
+
+  // Itens do menu principal
+  const menuItems = [
+    { 
+      path: '/people', 
+      icon: HomeIcon, 
+      label: 'Dashboard',
+      exactMatch: true
     },
-    {
-      name: 'Bases',
-      href: '/people/bases',
-      icon: BuildingOfficeIcon,
-      current: false
+    { 
+      path: '/people/people', 
+      icon: UsersIcon, 
+      label: 'Pessoas'
     },
-    {
-      name: 'Calendários',
-      href: '/people/calendars',
-      icon: CalendarDaysIcon,
-      current: false
+    { 
+      path: '/people/teams', 
+      icon: UserGroupIcon, 
+      label: 'Equipes'
     },
-    {
-      name: 'Pessoas',
-      href: '/people/people',
-      icon: UsersIcon,
-      current: false
+    { 
+      path: '/people/bases', 
+      icon: BuildingOfficeIcon, 
+      label: 'Bases'
     },
-    {
-      name: 'Equipes',
-      href: '/people/teams',
-      icon: UserGroupIcon,
-      current: false
+    { 
+      path: '/people/calendars', 
+      icon: CalendarDaysIcon, 
+      label: 'Calendários'
     },
-    {
-      name: 'Uso de Recursos',
-      href: '/people/resources',
-      icon: ChartBarIcon,
-      current: false
+    { 
+      path: '/people/resources', 
+      icon: ChartBarIcon, 
+      label: 'Uso de Recursos'
     }
   ];
 
   return (
-    <div className="flex h-screen bg-gray-100">
-      <Sidebar 
-        title="Pessoas & Recursos"
-        subtitle="Gestão de equipes e recursos"
-        items={sidebarItems}
-        currentPath={window.location.pathname}
-      />
-      
-      <div className="flex-1 flex flex-col overflow-hidden">
-        <main className="flex-1 overflow-x-hidden overflow-y-auto bg-gray-50">
-          <Routes>
-            <Route index element={<PeopleDashboard />} />
-            <Route path="bases" element={<BasesManagement />} />
-            <Route path="calendars" element={<CalendarsManagement />} />
-            <Route path="people" element={<PeopleManagement />} />
-            <Route path="teams" element={<TeamsManagement />} />
-            <Route path="resources" element={<ResourceUsagePanel />} />
-          </Routes>
-        </main>
-      </div>
-    </div>
+    <ModuleLayout 
+      moduleConfig={moduleConfig}
+      menuItems={menuItems}
+    >
+      <Routes>
+        <Route index element={<PeopleDashboard />} />
+        <Route path="bases" element={<BasesManagement />} />
+        <Route path="calendars" element={<CalendarsManagement />} />
+        <Route path="people" element={<PeopleManagement />} />
+        <Route path="teams" element={<TeamsManagement />} />
+        <Route path="resources" element={<ResourceUsagePanel />} />
+      </Routes>
+    </ModuleLayout>
   );
 };
 
