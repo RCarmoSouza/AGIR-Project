@@ -4,6 +4,7 @@ import {
   FolderIcon, 
   ClockIcon, 
   UserGroupIcon,
+  UsersIcon,
   CalendarDaysIcon,
   ArrowRightIcon
 } from '@heroicons/react/24/outline';
@@ -38,6 +39,18 @@ const Dashboard = () => {
       metrics: [
         { label: 'Horas Registradas', value: `${metrics.totalHours}h` },
         { label: 'Custo Total', value: `R$ ${metrics.totalCost.toLocaleString()}` }
+      ]
+    },
+    {
+      id: 'people',
+      name: 'Pessoas',
+      description: 'Gestão de pessoas, equipes e recursos',
+      icon: UsersIcon,
+      color: 'bg-purple-500',
+      path: '/people',
+      metrics: [
+        { label: 'Total de Pessoas', value: '24' },
+        { label: 'Equipes Ativas', value: '6' }
       ]
     }
   ];

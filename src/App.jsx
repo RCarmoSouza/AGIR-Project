@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Dashboard from './pages/Dashboard';
 import ProjectsApp from './apps/ProjectsApp';
 import TimesheetApp from './apps/TimesheetApp';
+import PeopleApp from './apps/PeopleApp';
 import './App.css';
 
 function App() {
@@ -16,6 +17,7 @@ function App() {
           {/* Apps modulares - cada um com seu próprio layout */}
           <Route path="/projects/*" element={<ProjectsApp />} />
           <Route path="/timesheet/*" element={<TimesheetApp />} />
+          <Route path="/people/*" element={<PeopleApp />} />
         </Routes>
       </div>
     </Router>
