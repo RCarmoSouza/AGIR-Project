@@ -32,16 +32,20 @@ const PeopleManagement = () => {
     phone: '',
     position: '',
     level: 'junior',
+    specialization: '',
     base: '',
     calendar: '',
     skills: [],
     hourlyRate: 0,
-    hourlyCost: 0,
     leader: '',
     status: 'active',
     admissionDate: '',
     dismissalDate: '',
-    notes: ''
+    notes: '',
+    // Históricos
+    rateHistory: [],
+    levelHistory: [],
+    employmentHistory: []
   });
 
   // Mock data - em produção viria de uma API
@@ -53,17 +57,29 @@ const PeopleManagement = () => {
       phone: '(11) 99999-1111',
       position: 'Gerente de Projetos',
       level: 'senior',
+      specialization: 'Gestão de Projetos',
       base: 'Porto Alegre',
       calendar: 'Padrão Porto Alegre',
       skills: ['Gestão de Projetos', 'Scrum', 'Liderança'],
       hourlyRate: 150,
-      hourlyCost: 200,
       leader: null,
       status: 'active',
       admissionDate: '2023-01-15',
       dismissalDate: null,
       notes: 'Gerente experiente com foco em metodologias ágeis',
-      avatar: null
+      avatar: null,
+      // Históricos
+      rateHistory: [
+        { date: '2023-01-15', oldRate: null, newRate: 130, reason: 'Admissão' },
+        { date: '2023-07-01', oldRate: 130, newRate: 150, reason: 'Aumento por performance' }
+      ],
+      levelHistory: [
+        { date: '2023-01-15', oldLevel: null, newLevel: 'pleno', reason: 'Admissão' },
+        { date: '2023-10-01', oldLevel: 'pleno', newLevel: 'senior', reason: 'Promoção' }
+      ],
+      employmentHistory: [
+        { type: 'admission', date: '2023-01-15', reason: 'Contratação inicial' }
+      ]
     },
     {
       id: 2,
@@ -72,17 +88,29 @@ const PeopleManagement = () => {
       phone: '(11) 99999-2222',
       position: 'Desenvolvedor Full Stack',
       level: 'pleno',
+      specialization: 'Full Stack',
       base: 'Porto Alegre',
       calendar: 'Padrão Porto Alegre',
       skills: ['React', 'Node.js', 'TypeScript', 'PostgreSQL'],
       hourlyRate: 120,
-      hourlyCost: 160,
       leader: 'Ana Silva',
       status: 'active',
       admissionDate: '2023-03-20',
       dismissalDate: null,
       notes: 'Desenvolvedor versátil com experiência em projetos complexos',
-      avatar: null
+      avatar: null,
+      // Históricos
+      rateHistory: [
+        { date: '2023-03-20', oldRate: null, newRate: 100, reason: 'Admissão' },
+        { date: '2023-09-01', oldRate: 100, newRate: 120, reason: 'Aumento por performance' }
+      ],
+      levelHistory: [
+        { date: '2023-03-20', oldLevel: null, newLevel: 'junior', reason: 'Admissão' },
+        { date: '2023-09-01', oldLevel: 'junior', newLevel: 'pleno', reason: 'Promoção' }
+      ],
+      employmentHistory: [
+        { type: 'admission', date: '2023-03-20', reason: 'Contratação inicial' }
+      ]
     },
     {
       id: 3,
@@ -91,17 +119,29 @@ const PeopleManagement = () => {
       phone: '(11) 99999-3333',
       position: 'UX/UI Designer',
       level: 'pleno',
+      specialization: 'UI/UX Design',
       base: 'São Paulo',
       calendar: 'Padrão São Paulo',
       skills: ['Figma', 'Adobe XD', 'Design System', 'Prototipagem'],
       hourlyRate: 110,
-      hourlyCost: 150,
       leader: 'Ana Silva',
       status: 'active',
       admissionDate: '2023-02-10',
       dismissalDate: null,
       notes: 'Designer criativa com foco em experiência do usuário',
-      avatar: null
+      avatar: null,
+      // Históricos
+      rateHistory: [
+        { date: '2023-02-10', oldRate: null, newRate: 90, reason: 'Admissão' },
+        { date: '2023-08-15', oldRate: 90, newRate: 110, reason: 'Aumento por performance' }
+      ],
+      levelHistory: [
+        { date: '2023-02-10', oldLevel: null, newLevel: 'junior', reason: 'Admissão' },
+        { date: '2023-08-15', oldLevel: 'junior', newLevel: 'pleno', reason: 'Promoção' }
+      ],
+      employmentHistory: [
+        { type: 'admission', date: '2023-02-10', reason: 'Contratação inicial' }
+      ]
     },
     {
       id: 4,
@@ -110,17 +150,27 @@ const PeopleManagement = () => {
       phone: '(11) 99999-4444',
       position: 'Desenvolvedor Junior',
       level: 'junior',
+      specialization: 'Front-End',
       base: 'Mendonça',
       calendar: 'Padrão Interior',
       skills: ['JavaScript', 'HTML', 'CSS', 'Git'],
       hourlyRate: 80,
-      hourlyCost: 120,
       leader: 'Carlos Santos',
       status: 'active',
       admissionDate: '2024-01-08',
       dismissalDate: null,
       notes: 'Desenvolvedor em início de carreira, muito dedicado',
-      avatar: null
+      avatar: null,
+      // Históricos
+      rateHistory: [
+        { date: '2024-01-08', oldRate: null, newRate: 80, reason: 'Admissão' }
+      ],
+      levelHistory: [
+        { date: '2024-01-08', oldLevel: null, newLevel: 'junior', reason: 'Admissão' }
+      ],
+      employmentHistory: [
+        { type: 'admission', date: '2024-01-08', reason: 'Contratação inicial' }
+      ]
     },
     {
       id: 5,
@@ -129,24 +179,60 @@ const PeopleManagement = () => {
       phone: '(11) 99999-5555',
       position: 'Analista de QA',
       level: 'pleno',
+      specialization: 'Testes e QA',
       base: 'São Paulo',
       calendar: 'Calendário Flexível',
       skills: ['Testes Automatizados', 'Selenium', 'Jest', 'Cypress'],
       hourlyRate: 100,
-      hourlyCost: 140,
       leader: 'Ana Silva',
       status: 'inactive',
       admissionDate: '2023-05-15',
       dismissalDate: '2024-12-20',
       notes: 'Especialista em qualidade de software',
-      avatar: null
+      avatar: null,
+      // Históricos
+      rateHistory: [
+        { date: '2023-05-15', oldRate: null, newRate: 85, reason: 'Admissão' },
+        { date: '2023-11-01', oldRate: 85, newRate: 100, reason: 'Aumento por performance' }
+      ],
+      levelHistory: [
+        { date: '2023-05-15', oldLevel: null, newLevel: 'junior', reason: 'Admissão' },
+        { date: '2023-11-01', oldLevel: 'junior', newLevel: 'pleno', reason: 'Promoção' }
+      ],
+      employmentHistory: [
+        { type: 'admission', date: '2023-05-15', reason: 'Contratação inicial' },
+        { type: 'dismissal', date: '2024-12-20', reason: 'Mudança para outra empresa' }
+      ]
     }
   ]);
 
   // Dados auxiliares
   const bases = ['Porto Alegre', 'São Paulo', 'Mendonça'];
   const calendars = ['Padrão Porto Alegre', 'Padrão São Paulo', 'Padrão Interior', 'Calendário Flexível'];
+  const specializations = [
+    'Full Stack',
+    'Front-End',
+    'Back-End',
+    'Mobile',
+    'DevOps',
+    'Data Science',
+    'Machine Learning',
+    'UI/UX Design',
+    'Product Design',
+    'Scrum Master',
+    'Product Owner',
+    'Arquitetura de Software',
+    'Segurança da Informação',
+    'Cloud Computing',
+    'Business Intelligence',
+    'Análise de Dados',
+    'Testes e QA',
+    'Infraestrutura',
+    'Gestão de Projetos',
+    'Consultoria Técnica'
+  ];
   const levels = [
+    { value: 'intern', label: 'Estágio' },
     { value: 'junior', label: 'Júnior' },
     { value: 'pleno', label: 'Pleno' },
     { value: 'senior', label: 'Sênior' },
@@ -187,16 +273,20 @@ const PeopleManagement = () => {
       phone: '',
       position: '',
       level: 'junior',
+      specialization: '',
       base: '',
       calendar: '',
       skills: [],
       hourlyRate: 0,
-      hourlyCost: 0,
       leader: '',
       status: 'active',
       admissionDate: '',
       dismissalDate: '',
-      notes: ''
+      notes: '',
+      // Históricos
+      rateHistory: [],
+      levelHistory: [],
+      employmentHistory: []
     });
   };
 
@@ -232,16 +322,20 @@ const PeopleManagement = () => {
       phone: person.phone,
       position: person.position,
       level: person.level,
+      specialization: person.specialization || '',
       base: person.base,
       calendar: person.calendar,
       skills: person.skills,
       hourlyRate: person.hourlyRate,
-      hourlyCost: person.hourlyCost,
       leader: person.leader,
       status: person.status,
       admissionDate: person.admissionDate,
-      dismissalDate: person.dismissalDate,
-      notes: person.notes
+      dismissalDate: person.dismissalDate || '',
+      notes: person.notes,
+      // Históricos (inicializar se não existirem)
+      rateHistory: person.rateHistory || [],
+      levelHistory: person.levelHistory || [],
+      employmentHistory: person.employmentHistory || []
     });
     setShowModal(true);
   };
@@ -561,7 +655,6 @@ const PeopleManagement = () => {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm text-gray-900">R$ {person.hourlyRate}</div>
-                      <div className="text-sm text-gray-500">Custo: R$ {person.hourlyCost}</div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       {getStatusBadge(person.status)}
@@ -753,7 +846,23 @@ const PeopleManagement = () => {
                 {/* Tab: Informações Profissionais */}
                 {activeTab === 'professional' && (
                   <div className="space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Especialização
+                        </label>
+                        <select
+                          value={formData.specialization}
+                          onChange={(e) => setFormData({...formData, specialization: e.target.value})}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                        >
+                          <option value="">Selecione uma especialização</option>
+                          {specializations.map(spec => (
+                            <option key={spec} value={spec}>{spec}</option>
+                          ))}
+                        </select>
+                      </div>
+
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">
                           Nível *
@@ -769,7 +878,9 @@ const PeopleManagement = () => {
                           ))}
                         </select>
                       </div>
+                    </div>
 
+                    <div className="grid grid-cols-1 md:grid-cols-1 gap-4">
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">
                           Taxa/Hora (R$) *
@@ -781,21 +892,6 @@ const PeopleManagement = () => {
                           step="0.01"
                           value={formData.hourlyRate}
                           onChange={(e) => setFormData({...formData, hourlyRate: parseFloat(e.target.value) || 0})}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Custo/Hora (R$) *
-                        </label>
-                        <input
-                          type="number"
-                          required
-                          min="0"
-                          step="0.01"
-                          value={formData.hourlyCost}
-                          onChange={(e) => setFormData({...formData, hourlyCost: parseFloat(e.target.value) || 0})}
                           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
                         />
                       </div>
@@ -852,6 +948,133 @@ const PeopleManagement = () => {
                         placeholder="Informações adicionais sobre a pessoa..."
                       />
                     </div>
+
+                    {/* Históricos - Apenas para edição */}
+                    {editingPerson && (
+                      <div className="space-y-6 pt-6 border-t border-gray-200">
+                        <h3 className="text-lg font-medium text-gray-900">Históricos</h3>
+                        
+                        {/* Histórico de Taxas */}
+                        <div className="bg-gray-50 p-4 rounded-lg">
+                          <div className="flex justify-between items-center mb-3">
+                            <h4 className="text-md font-medium text-gray-800">Histórico de Taxas</h4>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const reason = prompt('Motivo da alteração de taxa:');
+                                if (reason) {
+                                  const newEntry = {
+                                    date: new Date().toISOString().split('T')[0],
+                                    oldRate: formData.hourlyRate,
+                                    newRate: formData.hourlyRate,
+                                    reason: reason
+                                  };
+                                  setFormData({
+                                    ...formData,
+                                    rateHistory: [...(formData.rateHistory || []), newEntry]
+                                  });
+                                }
+                              }}
+                              className="text-sm text-blue-600 hover:text-blue-800 font-medium"
+                            >
+                              + Adicionar Registro
+                            </button>
+                          </div>
+                          {formData.rateHistory && formData.rateHistory.length > 0 ? (
+                            <div className="space-y-2">
+                              {formData.rateHistory.map((entry, index) => (
+                                <div key={index} className="flex justify-between items-center bg-white p-3 rounded border">
+                                  <div>
+                                    <span className="text-sm font-medium">
+                                      {entry.oldRate ? `R$ ${entry.oldRate}` : 'Inicial'} → R$ {entry.newRate}
+                                    </span>
+                                    <span className="text-sm text-gray-500 ml-2">({entry.reason})</span>
+                                  </div>
+                                  <div className="flex items-center space-x-2">
+                                    <span className="text-sm text-gray-400">
+                                      {new Date(entry.date).toLocaleDateString('pt-BR')}
+                                    </span>
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        const newHistory = formData.rateHistory.filter((_, i) => i !== index);
+                                        setFormData({...formData, rateHistory: newHistory});
+                                      }}
+                                      className="text-red-500 hover:text-red-700"
+                                      title="Remover registro"
+                                    >
+                                      <XMarkIcon className="w-4 h-4" />
+                                    </button>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <p className="text-sm text-gray-500">Nenhum histórico de alteração de taxa</p>
+                          )}
+                        </div>
+
+                        {/* Histórico de Níveis */}
+                        <div className="bg-gray-50 p-4 rounded-lg">
+                          <div className="flex justify-between items-center mb-3">
+                            <h4 className="text-md font-medium text-gray-800">Histórico de Níveis</h4>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const reason = prompt('Motivo da alteração de nível:');
+                                if (reason) {
+                                  const newEntry = {
+                                    date: new Date().toISOString().split('T')[0],
+                                    oldLevel: formData.level,
+                                    newLevel: formData.level,
+                                    reason: reason
+                                  };
+                                  setFormData({
+                                    ...formData,
+                                    levelHistory: [...(formData.levelHistory || []), newEntry]
+                                  });
+                                }
+                              }}
+                              className="text-sm text-blue-600 hover:text-blue-800 font-medium"
+                            >
+                              + Adicionar Registro
+                            </button>
+                          </div>
+                          {formData.levelHistory && formData.levelHistory.length > 0 ? (
+                            <div className="space-y-2">
+                              {formData.levelHistory.map((entry, index) => (
+                                <div key={index} className="flex justify-between items-center bg-white p-3 rounded border">
+                                  <div>
+                                    <span className="text-sm font-medium">
+                                      {entry.oldLevel ? levels.find(l => l.value === entry.oldLevel)?.label || entry.oldLevel : 'Inicial'} → {levels.find(l => l.value === entry.newLevel)?.label || entry.newLevel}
+                                    </span>
+                                    <span className="text-sm text-gray-500 ml-2">({entry.reason})</span>
+                                  </div>
+                                  <div className="flex items-center space-x-2">
+                                    <span className="text-sm text-gray-400">
+                                      {new Date(entry.date).toLocaleDateString('pt-BR')}
+                                    </span>
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        const newHistory = formData.levelHistory.filter((_, i) => i !== index);
+                                        setFormData({...formData, levelHistory: newHistory});
+                                      }}
+                                      className="text-red-500 hover:text-red-700"
+                                      title="Remover registro"
+                                    >
+                                      <XMarkIcon className="w-4 h-4" />
+                                    </button>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <p className="text-sm text-gray-500">Nenhum histórico de alteração de nível</p>
+                          )}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
 
@@ -908,7 +1131,7 @@ const PeopleManagement = () => {
                       {formData.status === 'inactive' && (
                         <div>
                           <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Data de Demissão
+                            Data de Encerramento
                           </label>
                           <input
                             type="date"
@@ -919,6 +1142,97 @@ const PeopleManagement = () => {
                         </div>
                       )}
                     </div>
+
+                    {/* Histórico de Admissões/Encerramentos - Apenas para edição */}
+                    {editingPerson && (
+                      <div className="space-y-6 pt-6 border-t border-gray-200">
+                        <h3 className="text-lg font-medium text-gray-900">Histórico de Admissões/Encerramentos</h3>
+                        
+                        <div className="bg-gray-50 p-4 rounded-lg">
+                          <div className="flex justify-between items-center mb-3">
+                            <h4 className="text-md font-medium text-gray-800">Histórico de Vínculos</h4>
+                            <div className="flex space-x-2">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const reason = prompt('Motivo da admissão:');
+                                  if (reason) {
+                                    const newEntry = {
+                                      type: 'admission',
+                                      date: new Date().toISOString().split('T')[0],
+                                      reason: reason
+                                    };
+                                    setFormData({
+                                      ...formData,
+                                      employmentHistory: [...(formData.employmentHistory || []), newEntry]
+                                    });
+                                  }
+                                }}
+                                className="text-sm text-green-600 hover:text-green-800 font-medium"
+                              >
+                                + Admissão
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const reason = prompt('Motivo do encerramento:');
+                                  if (reason) {
+                                    const newEntry = {
+                                      type: 'dismissal',
+                                      date: new Date().toISOString().split('T')[0],
+                                      reason: reason
+                                    };
+                                    setFormData({
+                                      ...formData,
+                                      employmentHistory: [...(formData.employmentHistory || []), newEntry]
+                                    });
+                                  }
+                                }}
+                                className="text-sm text-red-600 hover:text-red-800 font-medium"
+                              >
+                                + Encerramento
+                              </button>
+                            </div>
+                          </div>
+                          {formData.employmentHistory && formData.employmentHistory.length > 0 ? (
+                            <div className="space-y-2">
+                              {formData.employmentHistory.map((entry, index) => (
+                                <div key={index} className="flex justify-between items-center bg-white p-3 rounded border">
+                                  <div>
+                                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                                      entry.type === 'admission' 
+                                        ? 'bg-green-100 text-green-800' 
+                                        : 'bg-red-100 text-red-800'
+                                    }`}>
+                                      {entry.type === 'admission' ? 'Admissão' : 'Encerramento'}
+                                    </span>
+                                    <span className="text-sm text-gray-500 ml-2">({entry.reason})</span>
+                                  </div>
+                                  <div className="flex items-center space-x-2">
+                                    <span className="text-sm text-gray-400">
+                                      {new Date(entry.date).toLocaleDateString('pt-BR')}
+                                    </span>
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        const newHistory = formData.employmentHistory.filter((_, i) => i !== index);
+                                        setFormData({...formData, employmentHistory: newHistory});
+                                      }}
+                                      className="text-red-500 hover:text-red-700"
+                                      title="Remover registro"
+                                    >
+                                      <XMarkIcon className="w-4 h-4" />
+                                    </button>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <p className="text-sm text-gray-500">Nenhum histórico de admissão/encerramento</p>
+                          )}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
 
