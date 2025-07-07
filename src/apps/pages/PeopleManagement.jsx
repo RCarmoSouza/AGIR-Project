@@ -68,14 +68,38 @@ const PeopleManagement = () => {
       dismissalDate: null,
       notes: 'Gerente experiente com foco em metodologias ágeis',
       avatar: null,
-      // Históricos
+      // Históricos com datas de início e fim
       rateHistory: [
-        { date: '2023-01-15', oldRate: null, newRate: 130, reason: 'Admissão' },
-        { date: '2023-07-01', oldRate: 130, newRate: 150, reason: 'Aumento por performance' }
+        { 
+          id: 1,
+          value: 130, 
+          startDate: '2023-01-15', 
+          endDate: '2023-06-30',
+          reason: 'Admissão' 
+        },
+        { 
+          id: 2,
+          value: 150, 
+          startDate: '2023-07-01', 
+          endDate: null,
+          reason: 'Aumento por performance' 
+        }
       ],
       levelHistory: [
-        { date: '2023-01-15', oldLevel: null, newLevel: 'pleno', reason: 'Admissão' },
-        { date: '2023-10-01', oldLevel: 'pleno', newLevel: 'senior', reason: 'Promoção' }
+        { 
+          id: 1,
+          value: 'pleno', 
+          startDate: '2023-01-15', 
+          endDate: '2023-09-30',
+          reason: 'Admissão' 
+        },
+        { 
+          id: 2,
+          value: 'senior', 
+          startDate: '2023-10-01', 
+          endDate: null,
+          reason: 'Promoção' 
+        }
       ],
       employmentHistory: [
         { type: 'admission', date: '2023-01-15', reason: 'Contratação inicial' }
@@ -99,14 +123,38 @@ const PeopleManagement = () => {
       dismissalDate: null,
       notes: 'Desenvolvedor versátil com experiência em projetos complexos',
       avatar: null,
-      // Históricos
+      // Históricos com datas de início e fim
       rateHistory: [
-        { date: '2023-03-20', oldRate: null, newRate: 100, reason: 'Admissão' },
-        { date: '2023-09-01', oldRate: 100, newRate: 120, reason: 'Aumento por performance' }
+        { 
+          id: 1,
+          value: 100, 
+          startDate: '2023-03-20', 
+          endDate: '2023-08-31',
+          reason: 'Admissão' 
+        },
+        { 
+          id: 2,
+          value: 120, 
+          startDate: '2023-09-01', 
+          endDate: null,
+          reason: 'Aumento por performance' 
+        }
       ],
       levelHistory: [
-        { date: '2023-03-20', oldLevel: null, newLevel: 'junior', reason: 'Admissão' },
-        { date: '2023-09-01', oldLevel: 'junior', newLevel: 'pleno', reason: 'Promoção' }
+        { 
+          id: 1,
+          value: 'junior', 
+          startDate: '2023-03-20', 
+          endDate: '2023-08-31',
+          reason: 'Admissão' 
+        },
+        { 
+          id: 2,
+          value: 'pleno', 
+          startDate: '2023-09-01', 
+          endDate: null,
+          reason: 'Promoção' 
+        }
       ],
       employmentHistory: [
         { type: 'admission', date: '2023-03-20', reason: 'Contratação inicial' }
@@ -130,14 +178,38 @@ const PeopleManagement = () => {
       dismissalDate: null,
       notes: 'Designer criativa com foco em experiência do usuário',
       avatar: null,
-      // Históricos
+      // Históricos com datas de início e fim
       rateHistory: [
-        { date: '2023-02-10', oldRate: null, newRate: 90, reason: 'Admissão' },
-        { date: '2023-08-15', oldRate: 90, newRate: 110, reason: 'Aumento por performance' }
+        { 
+          id: 1,
+          value: 90, 
+          startDate: '2023-02-10', 
+          endDate: '2023-08-14',
+          reason: 'Admissão' 
+        },
+        { 
+          id: 2,
+          value: 110, 
+          startDate: '2023-08-15', 
+          endDate: null,
+          reason: 'Aumento por performance' 
+        }
       ],
       levelHistory: [
-        { date: '2023-02-10', oldLevel: null, newLevel: 'junior', reason: 'Admissão' },
-        { date: '2023-08-15', oldLevel: 'junior', newLevel: 'pleno', reason: 'Promoção' }
+        { 
+          id: 1,
+          value: 'junior', 
+          startDate: '2023-02-10', 
+          endDate: '2023-08-14',
+          reason: 'Admissão' 
+        },
+        { 
+          id: 2,
+          value: 'pleno', 
+          startDate: '2023-08-15', 
+          endDate: null,
+          reason: 'Promoção' 
+        }
       ],
       employmentHistory: [
         { type: 'admission', date: '2023-02-10', reason: 'Contratação inicial' }
@@ -161,12 +233,24 @@ const PeopleManagement = () => {
       dismissalDate: null,
       notes: 'Desenvolvedor em início de carreira, muito dedicado',
       avatar: null,
-      // Históricos
+      // Históricos com datas de início e fim
       rateHistory: [
-        { date: '2024-01-08', oldRate: null, newRate: 80, reason: 'Admissão' }
+        { 
+          id: 1,
+          value: 80, 
+          startDate: '2024-01-08', 
+          endDate: null,
+          reason: 'Admissão' 
+        }
       ],
       levelHistory: [
-        { date: '2024-01-08', oldLevel: null, newLevel: 'junior', reason: 'Admissão' }
+        { 
+          id: 1,
+          value: 'junior', 
+          startDate: '2024-01-08', 
+          endDate: null,
+          reason: 'Admissão' 
+        }
       ],
       employmentHistory: [
         { type: 'admission', date: '2024-01-08', reason: 'Contratação inicial' }
@@ -190,14 +274,38 @@ const PeopleManagement = () => {
       dismissalDate: '2024-12-20',
       notes: 'Especialista em qualidade de software',
       avatar: null,
-      // Históricos
+      // Históricos com datas de início e fim
       rateHistory: [
-        { date: '2023-05-15', oldRate: null, newRate: 85, reason: 'Admissão' },
-        { date: '2023-11-01', oldRate: 85, newRate: 100, reason: 'Aumento por performance' }
+        { 
+          id: 1,
+          value: 85, 
+          startDate: '2023-05-15', 
+          endDate: '2023-10-31',
+          reason: 'Admissão' 
+        },
+        { 
+          id: 2,
+          value: 100, 
+          startDate: '2023-11-01', 
+          endDate: null,
+          reason: 'Aumento por performance' 
+        }
       ],
       levelHistory: [
-        { date: '2023-05-15', oldLevel: null, newLevel: 'junior', reason: 'Admissão' },
-        { date: '2023-11-01', oldLevel: 'junior', newLevel: 'pleno', reason: 'Promoção' }
+        { 
+          id: 1,
+          value: 'junior', 
+          startDate: '2023-05-15', 
+          endDate: '2023-10-31',
+          reason: 'Admissão' 
+        },
+        { 
+          id: 2,
+          value: 'pleno', 
+          startDate: '2023-11-01', 
+          endDate: null,
+          reason: 'Promoção' 
+        }
       ],
       employmentHistory: [
         { type: 'admission', date: '2023-05-15', reason: 'Contratação inicial' },
@@ -240,6 +348,65 @@ const PeopleManagement = () => {
     { value: 'lead', label: 'Líder Técnico' },
     { value: 'manager', label: 'Gerente' }
   ];
+
+  // Funções para calcular valores ativos do histórico
+  const getActiveValue = (history) => {
+    if (!history || history.length === 0) return null;
+    
+    // Busca o registro ativo (sem endDate ou com endDate futura)
+    const today = new Date().toISOString().split('T')[0];
+    const activeRecord = history.find(record => 
+      !record.endDate || record.endDate > today
+    );
+    
+    if (activeRecord) return activeRecord.value;
+    
+    // Se não há registro ativo, pega o mais recente
+    const sortedHistory = [...history].sort((a, b) => 
+      new Date(b.startDate) - new Date(a.startDate)
+    );
+    return sortedHistory[0]?.value || null;
+  };
+
+  const getActiveHourlyRate = (person) => {
+    return getActiveValue(person.rateHistory);
+  };
+
+  const getActiveLevel = (person) => {
+    return getActiveValue(person.levelHistory);
+  };
+
+  // Função para validar se uma nova entrada no histórico é válida
+  const validateHistoryEntry = (history, newEntry) => {
+    const errors = [];
+    
+    // Verifica se já existe um registro ativo (sem endDate)
+    const activeRecords = history.filter(record => !record.endDate);
+    if (!newEntry.endDate && activeRecords.length > 0) {
+      errors.push('Já existe um registro ativo. Defina uma data de fim para o registro atual antes de adicionar um novo.');
+    }
+    
+    // Verifica sobreposição de datas
+    const overlapping = history.find(record => {
+      const recordStart = new Date(record.startDate);
+      const recordEnd = record.endDate ? new Date(record.endDate) : new Date('9999-12-31');
+      const newStart = new Date(newEntry.startDate);
+      const newEnd = newEntry.endDate ? new Date(newEntry.endDate) : new Date('9999-12-31');
+      
+      return (newStart <= recordEnd && newEnd >= recordStart);
+    });
+    
+    if (overlapping) {
+      errors.push('As datas se sobrepõem com um registro existente.');
+    }
+    
+    // Verifica se startDate não é posterior a endDate
+    if (newEntry.endDate && new Date(newEntry.startDate) >= new Date(newEntry.endDate)) {
+      errors.push('A data de início deve ser anterior à data de fim.');
+    }
+    
+    return errors;
+  };
   const skillsList = [
     'React', 'Node.js', 'TypeScript', 'JavaScript', 'Python', 'Java',
     'PostgreSQL', 'MongoDB', 'AWS', 'Docker', 'Kubernetes',
@@ -294,18 +461,57 @@ const PeopleManagement = () => {
     e.preventDefault();
     
     if (editingPerson) {
+      // Edição - apenas atualiza os dados básicos
       setPeople(people.map(person => 
         person.id === editingPerson.id 
           ? { ...person, ...formData }
           : person
       ));
     } else {
+      // Criação - gera registros iniciais no histórico
+      const initialRateHistory = [];
+      const initialLevelHistory = [];
+      
+      // Criar registro inicial de taxa se informado
+      if (formData.hourlyRate && formData.hourlyRate > 0) {
+        initialRateHistory.push({
+          id: 1,
+          value: formData.hourlyRate,
+          startDate: formData.admissionDate,
+          endDate: null, // Registro ativo
+          reason: 'Admissão'
+        });
+      }
+      
+      // Criar registro inicial de nível se informado
+      if (formData.level) {
+        initialLevelHistory.push({
+          id: 1,
+          value: formData.level,
+          startDate: formData.admissionDate,
+          endDate: null, // Registro ativo
+          reason: 'Admissão'
+        });
+      }
+      
       const newPerson = {
         id: Date.now(),
         ...formData,
-        avatar: null
+        avatar: null,
+        // Históricos iniciais baseados nos valores informados
+        rateHistory: initialRateHistory,
+        levelHistory: initialLevelHistory,
+        employmentHistory: [{
+          type: 'admission',
+          date: formData.admissionDate,
+          reason: 'Contratação inicial'
+        }]
       };
+      
       setPeople([...people, newPerson]);
+      
+      // Mostrar mensagem de sucesso
+      alert('Pessoa criada com sucesso! Registros iniciais foram adicionados ao histórico com base na data de admissão.');
     }
     
     setShowModal(false);
@@ -866,17 +1072,36 @@ const PeopleManagement = () => {
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">
                           Nível *
+                          {editingPerson && (
+                            <span className="text-xs text-blue-600 ml-1">(Calculado do histórico ativo)</span>
+                          )}
                         </label>
-                        <select
-                          required
-                          value={formData.level}
-                          onChange={(e) => setFormData({...formData, level: e.target.value})}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                        >
-                          {levels.map(level => (
-                            <option key={level.value} value={level.value}>{level.label}</option>
-                          ))}
-                        </select>
+                        {editingPerson ? (
+                          <div className="w-full px-3 py-2 border border-gray-200 rounded-md bg-gray-50">
+                            <span className="text-gray-900">
+                              {levels.find(l => l.value === getActiveLevel(editingPerson))?.label || 'Não definido'}
+                            </span>
+                            <span className="text-xs text-green-600 ml-2">
+                              (Valor ativo do histórico)
+                            </span>
+                          </div>
+                        ) : (
+                          <select
+                            required
+                            value={formData.level}
+                            onChange={(e) => setFormData({...formData, level: e.target.value})}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                          >
+                            {levels.map(level => (
+                              <option key={level.value} value={level.value}>{level.label}</option>
+                            ))}
+                          </select>
+                        )}
+                        {editingPerson && (
+                          <p className="text-xs text-gray-500 mt-1">
+                            💡 Para alterar, use o histórico de níveis abaixo
+                          </p>
+                        )}
                       </div>
                     </div>
 
@@ -884,16 +1109,35 @@ const PeopleManagement = () => {
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">
                           Taxa/Hora (R$) *
+                          {editingPerson && (
+                            <span className="text-xs text-blue-600 ml-1">(Calculado do histórico ativo)</span>
+                          )}
                         </label>
-                        <input
-                          type="number"
-                          required
-                          min="0"
-                          step="0.01"
-                          value={formData.hourlyRate}
-                          onChange={(e) => setFormData({...formData, hourlyRate: parseFloat(e.target.value) || 0})}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                        />
+                        {editingPerson ? (
+                          <div className="w-full px-3 py-2 border border-gray-200 rounded-md bg-gray-50">
+                            <span className="text-gray-900 font-medium">
+                              R$ {getActiveHourlyRate(editingPerson) || 'Não definido'}
+                            </span>
+                            <span className="text-xs text-green-600 ml-2">
+                              (Valor ativo do histórico)
+                            </span>
+                          </div>
+                        ) : (
+                          <input
+                            type="number"
+                            required
+                            min="0"
+                            step="0.01"
+                            value={formData.hourlyRate}
+                            onChange={(e) => setFormData({...formData, hourlyRate: parseFloat(e.target.value) || 0})}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                          />
+                        )}
+                        {editingPerson && (
+                          <p className="text-xs text-gray-500 mt-1">
+                            💡 Para alterar, use o histórico de taxas abaixo
+                          </p>
+                        )}
                       </div>
                     </div>
 
@@ -961,49 +1205,109 @@ const PeopleManagement = () => {
                             <button
                               type="button"
                               onClick={() => {
-                                const reason = prompt('Motivo da alteração de taxa:');
-                                if (reason) {
+                                // Modal para adicionar novo registro de taxa
+                                const value = prompt('Nova taxa/hora (R$):');
+                                const startDate = prompt('Data de início (YYYY-MM-DD):');
+                                const endDate = prompt('Data de fim (YYYY-MM-DD) - deixe vazio se for registro ativo:');
+                                const reason = prompt('Motivo da alteração:');
+                                
+                                if (value && startDate && reason) {
                                   const newEntry = {
-                                    date: new Date().toISOString().split('T')[0],
-                                    oldRate: formData.hourlyRate,
-                                    newRate: formData.hourlyRate,
+                                    id: Date.now(),
+                                    value: parseFloat(value),
+                                    startDate: startDate,
+                                    endDate: endDate || null,
                                     reason: reason
                                   };
+                                  
+                                  // Validar entrada
+                                  const errors = validateHistoryEntry(formData.rateHistory || [], newEntry);
+                                  if (errors.length > 0) {
+                                    alert('Erro: ' + errors.join('\n'));
+                                    return;
+                                  }
+                                  
                                   setFormData({
                                     ...formData,
                                     rateHistory: [...(formData.rateHistory || []), newEntry]
                                   });
                                 }
                               }}
-                              className="text-sm text-blue-600 hover:text-blue-800 font-medium"
+                              className="text-sm bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700 font-medium"
                             >
-                              + Adicionar Registro
+                              + Adicionar Novo Registro
                             </button>
                           </div>
                           {formData.rateHistory && formData.rateHistory.length > 0 ? (
                             <div className="space-y-2">
-                              {formData.rateHistory.map((entry, index) => (
-                                <div key={index} className="flex justify-between items-center bg-white p-3 rounded border">
-                                  <div>
-                                    <span className="text-sm font-medium">
-                                      {entry.oldRate ? `R$ ${entry.oldRate}` : 'Inicial'} → R$ {entry.newRate}
-                                    </span>
-                                    <span className="text-sm text-gray-500 ml-2">({entry.reason})</span>
+                              <div className="grid grid-cols-5 gap-2 text-xs font-medium text-gray-600 border-b pb-2">
+                                <div>Valor</div>
+                                <div>Data Início</div>
+                                <div>Data Fim</div>
+                                <div>Motivo</div>
+                                <div>Ações</div>
+                              </div>
+                              {formData.rateHistory
+                                .sort((a, b) => new Date(b.startDate) - new Date(a.startDate))
+                                .map((entry, index) => (
+                                <div key={entry.id || index} className="grid grid-cols-5 gap-2 items-center bg-white p-3 rounded border">
+                                  <div className="text-sm font-medium">
+                                    R$ {entry.value}
+                                    {!entry.endDate && (
+                                      <span className="ml-1 text-xs bg-green-100 text-green-800 px-1 rounded">ATIVO</span>
+                                    )}
                                   </div>
-                                  <div className="flex items-center space-x-2">
-                                    <span className="text-sm text-gray-400">
-                                      {new Date(entry.date).toLocaleDateString('pt-BR')}
-                                    </span>
+                                  <div className="text-sm text-gray-600">
+                                    {new Date(entry.startDate).toLocaleDateString('pt-BR')}
+                                  </div>
+                                  <div className="text-sm text-gray-600">
+                                    {entry.endDate ? new Date(entry.endDate).toLocaleDateString('pt-BR') : '-'}
+                                  </div>
+                                  <div className="text-sm text-gray-600 truncate" title={entry.reason}>
+                                    {entry.reason}
+                                  </div>
+                                  <div className="flex space-x-1">
                                     <button
                                       type="button"
                                       onClick={() => {
-                                        const newHistory = formData.rateHistory.filter((_, i) => i !== index);
-                                        setFormData({...formData, rateHistory: newHistory});
+                                        const newValue = prompt('Nova taxa/hora (R$):', entry.value);
+                                        const newStartDate = prompt('Data de início (YYYY-MM-DD):', entry.startDate);
+                                        const newEndDate = prompt('Data de fim (YYYY-MM-DD) - deixe vazio se for registro ativo:', entry.endDate || '');
+                                        const newReason = prompt('Motivo:', entry.reason);
+                                        
+                                        if (newValue && newStartDate && newReason) {
+                                          const updatedEntry = {
+                                            ...entry,
+                                            value: parseFloat(newValue),
+                                            startDate: newStartDate,
+                                            endDate: newEndDate || null,
+                                            reason: newReason
+                                          };
+                                          
+                                          const updatedHistory = formData.rateHistory.map(h => 
+                                            h.id === entry.id ? updatedEntry : h
+                                          );
+                                          
+                                          setFormData({...formData, rateHistory: updatedHistory});
+                                        }
                                       }}
-                                      className="text-red-500 hover:text-red-700"
+                                      className="text-blue-500 hover:text-blue-700 text-xs"
+                                      title="Editar registro"
+                                    >
+                                      <PencilIcon className="w-3 h-3" />
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        if (confirm('Tem certeza que deseja remover este registro?')) {
+                                          const newHistory = formData.rateHistory.filter(h => h.id !== entry.id);
+                                          setFormData({...formData, rateHistory: newHistory});
+                                        }
+                                      }}
+                                      className="text-red-500 hover:text-red-700 text-xs"
                                       title="Remover registro"
                                     >
-                                      <XMarkIcon className="w-4 h-4" />
+                                      <XMarkIcon className="w-3 h-3" />
                                     </button>
                                   </div>
                                 </div>
@@ -1021,49 +1325,111 @@ const PeopleManagement = () => {
                             <button
                               type="button"
                               onClick={() => {
-                                const reason = prompt('Motivo da alteração de nível:');
-                                if (reason) {
+                                // Modal para adicionar novo registro de nível
+                                const levelOptions = levels.map(l => `${l.value}: ${l.label}`).join('\n');
+                                const value = prompt(`Novo nível:\n${levelOptions}\n\nDigite o valor:`);
+                                const startDate = prompt('Data de início (YYYY-MM-DD):');
+                                const endDate = prompt('Data de fim (YYYY-MM-DD) - deixe vazio se for registro ativo:');
+                                const reason = prompt('Motivo da alteração:');
+                                
+                                if (value && startDate && reason) {
                                   const newEntry = {
-                                    date: new Date().toISOString().split('T')[0],
-                                    oldLevel: formData.level,
-                                    newLevel: formData.level,
+                                    id: Date.now(),
+                                    value: value,
+                                    startDate: startDate,
+                                    endDate: endDate || null,
                                     reason: reason
                                   };
+                                  
+                                  // Validar entrada
+                                  const errors = validateHistoryEntry(formData.levelHistory || [], newEntry);
+                                  if (errors.length > 0) {
+                                    alert('Erro: ' + errors.join('\n'));
+                                    return;
+                                  }
+                                  
                                   setFormData({
                                     ...formData,
                                     levelHistory: [...(formData.levelHistory || []), newEntry]
                                   });
                                 }
                               }}
-                              className="text-sm text-blue-600 hover:text-blue-800 font-medium"
+                              className="text-sm bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700 font-medium"
                             >
-                              + Adicionar Registro
+                              + Adicionar Novo Registro
                             </button>
                           </div>
                           {formData.levelHistory && formData.levelHistory.length > 0 ? (
                             <div className="space-y-2">
-                              {formData.levelHistory.map((entry, index) => (
-                                <div key={index} className="flex justify-between items-center bg-white p-3 rounded border">
-                                  <div>
-                                    <span className="text-sm font-medium">
-                                      {entry.oldLevel ? levels.find(l => l.value === entry.oldLevel)?.label || entry.oldLevel : 'Inicial'} → {levels.find(l => l.value === entry.newLevel)?.label || entry.newLevel}
-                                    </span>
-                                    <span className="text-sm text-gray-500 ml-2">({entry.reason})</span>
+                              <div className="grid grid-cols-5 gap-2 text-xs font-medium text-gray-600 border-b pb-2">
+                                <div>Nível</div>
+                                <div>Data Início</div>
+                                <div>Data Fim</div>
+                                <div>Motivo</div>
+                                <div>Ações</div>
+                              </div>
+                              {formData.levelHistory
+                                .sort((a, b) => new Date(b.startDate) - new Date(a.startDate))
+                                .map((entry, index) => (
+                                <div key={entry.id || index} className="grid grid-cols-5 gap-2 items-center bg-white p-3 rounded border">
+                                  <div className="text-sm font-medium">
+                                    {levels.find(l => l.value === entry.value)?.label || entry.value}
+                                    {!entry.endDate && (
+                                      <span className="ml-1 text-xs bg-green-100 text-green-800 px-1 rounded">ATIVO</span>
+                                    )}
                                   </div>
-                                  <div className="flex items-center space-x-2">
-                                    <span className="text-sm text-gray-400">
-                                      {new Date(entry.date).toLocaleDateString('pt-BR')}
-                                    </span>
+                                  <div className="text-sm text-gray-600">
+                                    {new Date(entry.startDate).toLocaleDateString('pt-BR')}
+                                  </div>
+                                  <div className="text-sm text-gray-600">
+                                    {entry.endDate ? new Date(entry.endDate).toLocaleDateString('pt-BR') : '-'}
+                                  </div>
+                                  <div className="text-sm text-gray-600 truncate" title={entry.reason}>
+                                    {entry.reason}
+                                  </div>
+                                  <div className="flex space-x-1">
                                     <button
                                       type="button"
                                       onClick={() => {
-                                        const newHistory = formData.levelHistory.filter((_, i) => i !== index);
-                                        setFormData({...formData, levelHistory: newHistory});
+                                        const levelOptions = levels.map(l => `${l.value}: ${l.label}`).join('\n');
+                                        const newValue = prompt(`Novo nível:\n${levelOptions}\n\nDigite o valor:`, entry.value);
+                                        const newStartDate = prompt('Data de início (YYYY-MM-DD):', entry.startDate);
+                                        const newEndDate = prompt('Data de fim (YYYY-MM-DD) - deixe vazio se for registro ativo:', entry.endDate || '');
+                                        const newReason = prompt('Motivo:', entry.reason);
+                                        
+                                        if (newValue && newStartDate && newReason) {
+                                          const updatedEntry = {
+                                            ...entry,
+                                            value: newValue,
+                                            startDate: newStartDate,
+                                            endDate: newEndDate || null,
+                                            reason: newReason
+                                          };
+                                          
+                                          const updatedHistory = formData.levelHistory.map(h => 
+                                            h.id === entry.id ? updatedEntry : h
+                                          );
+                                          
+                                          setFormData({...formData, levelHistory: updatedHistory});
+                                        }
                                       }}
-                                      className="text-red-500 hover:text-red-700"
+                                      className="text-blue-500 hover:text-blue-700 text-xs"
+                                      title="Editar registro"
+                                    >
+                                      <PencilIcon className="w-3 h-3" />
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        if (confirm('Tem certeza que deseja remover este registro?')) {
+                                          const newHistory = formData.levelHistory.filter(h => h.id !== entry.id);
+                                          setFormData({...formData, levelHistory: newHistory});
+                                        }
+                                      }}
+                                      className="text-red-500 hover:text-red-700 text-xs"
                                       title="Remover registro"
                                     >
-                                      <XMarkIcon className="w-4 h-4" />
+                                      <XMarkIcon className="w-3 h-3" />
                                     </button>
                                   </div>
                                 </div>
