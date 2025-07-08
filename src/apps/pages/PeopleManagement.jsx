@@ -48,6 +48,12 @@ const PeopleManagement = () => {
     employmentHistory: []
   });
 
+  // Estados para campos inline de histórico
+  const [newRateEntry, setNewRateEntry] = useState({ value: '', startDate: '', endDate: '', reason: '' });
+  const [newLevelEntry, setNewLevelEntry] = useState({ value: '', startDate: '', endDate: '', reason: '' });
+  const [rateMessage, setRateMessage] = useState(null);
+  const [levelMessage, setLevelMessage] = useState(null);
+
   // Mock data - em produção viria de uma API
   const [people, setPeople] = useState([
     {
@@ -1200,44 +1206,129 @@ const PeopleManagement = () => {
                         
                         {/* Histórico de Taxas */}
                         <div className="bg-gray-50 p-4 rounded-lg">
-                          <div className="flex justify-between items-center mb-3">
-                            <h4 className="text-md font-medium text-gray-800">Histórico de Taxas</h4>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                // Modal para adicionar novo registro de taxa
-                                const value = prompt('Nova taxa/hora (R$):');
-                                const startDate = prompt('Data de início (YYYY-MM-DD):');
-                                const endDate = prompt('Data de fim (YYYY-MM-DD) - deixe vazio se for registro ativo:');
-                                const reason = prompt('Motivo da alteração:');
-                                
-                                if (value && startDate && reason) {
-                                  const newEntry = {
-                                    id: Date.now(),
-                                    value: parseFloat(value),
-                                    startDate: startDate,
-                                    endDate: endDate || null,
-                                    reason: reason
-                                  };
-                                  
-                                  // Validar entrada
-                                  const errors = validateHistoryEntry(formData.rateHistory || [], newEntry);
-                                  if (errors.length > 0) {
-                                    alert('Erro: ' + errors.join('\n'));
-                                    return;
-                                  }
-                                  
-                                  setFormData({
-                                    ...formData,
-                                    rateHistory: [...(formData.rateHistory || []), newEntry]
-                                  });
-                                }
-                              }}
-                              className="text-sm bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700 font-medium"
-                            >
-                              + Adicionar Novo Registro
-                            </button>
+                          <div className="mb-4">
+                            <h4 className="text-md font-medium text-gray-800 mb-3">Histórico de Taxas</h4>
+                            
+                            {/* Campos inline para adicionar novo registro */}
+                            <div className="bg-white p-3 rounded border border-gray-200 mb-3">
+                              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 items-end">
+                                <div className="sm:col-span-1">
+                                  <label className="block text-xs font-medium text-gray-700 mb-1" htmlFor="rate-value">
+                                    Valor (R$) *
+                                  </label>
+                                  <input
+                                    id="rate-value"
+                                    type="number"
+                                    step="0.01"
+                                    min="0"
+                                    value={newRateEntry.value || ''}
+                                    onChange={(e) => setNewRateEntry({...newRateEntry, value: e.target.value})}
+                                    className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500"
+                                    placeholder="150.00"
+                                    aria-describedby="rate-value-help"
+                                  />
+                                  <div id="rate-value-help" className="sr-only">Digite o valor da taxa por hora em reais</div>
+                                </div>
+                                <div className="sm:col-span-1">
+                                  <label className="block text-xs font-medium text-gray-700 mb-1" htmlFor="rate-start">
+                                    Início *
+                                  </label>
+                                  <input
+                                    id="rate-start"
+                                    type="date"
+                                    value={newRateEntry.startDate || ''}
+                                    onChange={(e) => setNewRateEntry({...newRateEntry, startDate: e.target.value})}
+                                    className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500"
+                                    aria-describedby="rate-start-help"
+                                  />
+                                  <div id="rate-start-help" className="sr-only">Data de início da vigência desta taxa</div>
+                                </div>
+                                <div className="sm:col-span-1">
+                                  <label className="block text-xs font-medium text-gray-700 mb-1" htmlFor="rate-end">
+                                    Fim
+                                  </label>
+                                  <input
+                                    id="rate-end"
+                                    type="date"
+                                    value={newRateEntry.endDate || ''}
+                                    onChange={(e) => setNewRateEntry({...newRateEntry, endDate: e.target.value})}
+                                    className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500"
+                                    aria-describedby="rate-end-help"
+                                  />
+                                  <div id="rate-end-help" className="sr-only">Data de fim da vigência desta taxa (opcional)</div>
+                                </div>
+                                <div className="sm:col-span-2 lg:col-span-1">
+                                  <label className="block text-xs font-medium text-gray-700 mb-1" htmlFor="rate-reason">
+                                    Motivo *
+                                  </label>
+                                  <input
+                                    id="rate-reason"
+                                    type="text"
+                                    value={newRateEntry.reason || ''}
+                                    onChange={(e) => setNewRateEntry({...newRateEntry, reason: e.target.value})}
+                                    className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500"
+                                    placeholder="Ex: Aumento por performance"
+                                    aria-describedby="rate-reason-help"
+                                  />
+                                  <div id="rate-reason-help" className="sr-only">Motivo da alteração da taxa</div>
+                                </div>
+                                <div className="sm:col-span-2 lg:col-span-1">
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      if (!newRateEntry.value || !newRateEntry.startDate || !newRateEntry.reason) {
+                                        setRateMessage({ type: 'error', text: 'Valor, Data de Início e Motivo são obrigatórios' });
+                                        return;
+                                      }
+                                      
+                                      const newEntry = {
+                                        id: Date.now(),
+                                        value: parseFloat(newRateEntry.value),
+                                        startDate: newRateEntry.startDate,
+                                        endDate: newRateEntry.endDate || null,
+                                        reason: newRateEntry.reason
+                                      };
+                                      
+                                      // Validar entrada
+                                      const errors = validateHistoryEntry(formData.rateHistory || [], newEntry);
+                                      if (errors.length > 0) {
+                                        setRateMessage({ type: 'error', text: errors.join(', ') });
+                                        return;
+                                      }
+                                      
+                                      setFormData({
+                                        ...formData,
+                                        rateHistory: [...(formData.rateHistory || []), newEntry]
+                                      });
+                                      
+                                      // Limpar campos
+                                      setNewRateEntry({ value: '', startDate: '', endDate: '', reason: '' });
+                                      setRateMessage({ type: 'success', text: 'Registro adicionado com sucesso!' });
+                                      
+                                      // Limpar mensagem após 3 segundos
+                                      setTimeout(() => setRateMessage(null), 3000);
+                                    }}
+                                    className="w-full text-sm bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700 font-medium transition-colors"
+                                    aria-label="Adicionar novo registro de taxa"
+                                  >
+                                    + Adicionar
+                                  </button>
+                                </div>
+                              </div>
+                              
+                              {/* Mensagem de feedback */}
+                              {rateMessage && (
+                                <div className={`mt-2 text-xs px-2 py-1 rounded ${
+                                  rateMessage.type === 'success' 
+                                    ? 'bg-green-100 text-green-800' 
+                                    : 'bg-red-100 text-red-800'
+                                }`}>
+                                  {rateMessage.text}
+                                </div>
+                              )}
+                            </div>
                           </div>
+                          
                           {formData.rateHistory && formData.rateHistory.length > 0 ? (
                             <div className="space-y-2">
                               <div className="grid grid-cols-5 gap-2 text-xs font-medium text-gray-600 border-b pb-2">
@@ -1320,45 +1411,130 @@ const PeopleManagement = () => {
 
                         {/* Histórico de Níveis */}
                         <div className="bg-gray-50 p-4 rounded-lg">
-                          <div className="flex justify-between items-center mb-3">
-                            <h4 className="text-md font-medium text-gray-800">Histórico de Níveis</h4>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                // Modal para adicionar novo registro de nível
-                                const levelOptions = levels.map(l => `${l.value}: ${l.label}`).join('\n');
-                                const value = prompt(`Novo nível:\n${levelOptions}\n\nDigite o valor:`);
-                                const startDate = prompt('Data de início (YYYY-MM-DD):');
-                                const endDate = prompt('Data de fim (YYYY-MM-DD) - deixe vazio se for registro ativo:');
-                                const reason = prompt('Motivo da alteração:');
-                                
-                                if (value && startDate && reason) {
-                                  const newEntry = {
-                                    id: Date.now(),
-                                    value: value,
-                                    startDate: startDate,
-                                    endDate: endDate || null,
-                                    reason: reason
-                                  };
-                                  
-                                  // Validar entrada
-                                  const errors = validateHistoryEntry(formData.levelHistory || [], newEntry);
-                                  if (errors.length > 0) {
-                                    alert('Erro: ' + errors.join('\n'));
-                                    return;
-                                  }
-                                  
-                                  setFormData({
-                                    ...formData,
-                                    levelHistory: [...(formData.levelHistory || []), newEntry]
-                                  });
-                                }
-                              }}
-                              className="text-sm bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700 font-medium"
-                            >
-                              + Adicionar Novo Registro
-                            </button>
+                          <div className="mb-4">
+                            <h4 className="text-md font-medium text-gray-800 mb-3">Histórico de Níveis</h4>
+                            
+                            {/* Campos inline para adicionar novo registro */}
+                            <div className="bg-white p-3 rounded border border-gray-200 mb-3">
+                              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 items-end">
+                                <div className="sm:col-span-1">
+                                  <label className="block text-xs font-medium text-gray-700 mb-1" htmlFor="level-value">
+                                    Nível *
+                                  </label>
+                                  <select
+                                    id="level-value"
+                                    value={newLevelEntry.value || ''}
+                                    onChange={(e) => setNewLevelEntry({...newLevelEntry, value: e.target.value})}
+                                    className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500"
+                                    aria-describedby="level-value-help"
+                                  >
+                                    <option value="">Selecione um nível</option>
+                                    {levels.map(level => (
+                                      <option key={level.value} value={level.value}>{level.label}</option>
+                                    ))}
+                                  </select>
+                                  <div id="level-value-help" className="sr-only">Selecione o nível profissional</div>
+                                </div>
+                                <div className="sm:col-span-1">
+                                  <label className="block text-xs font-medium text-gray-700 mb-1" htmlFor="level-start">
+                                    Início *
+                                  </label>
+                                  <input
+                                    id="level-start"
+                                    type="date"
+                                    value={newLevelEntry.startDate || ''}
+                                    onChange={(e) => setNewLevelEntry({...newLevelEntry, startDate: e.target.value})}
+                                    className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500"
+                                    aria-describedby="level-start-help"
+                                  />
+                                  <div id="level-start-help" className="sr-only">Data de início da vigência deste nível</div>
+                                </div>
+                                <div className="sm:col-span-1">
+                                  <label className="block text-xs font-medium text-gray-700 mb-1" htmlFor="level-end">
+                                    Fim
+                                  </label>
+                                  <input
+                                    id="level-end"
+                                    type="date"
+                                    value={newLevelEntry.endDate || ''}
+                                    onChange={(e) => setNewLevelEntry({...newLevelEntry, endDate: e.target.value})}
+                                    className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500"
+                                    aria-describedby="level-end-help"
+                                  />
+                                  <div id="level-end-help" className="sr-only">Data de fim da vigência deste nível (opcional)</div>
+                                </div>
+                                <div className="sm:col-span-2 lg:col-span-1">
+                                  <label className="block text-xs font-medium text-gray-700 mb-1" htmlFor="level-reason">
+                                    Motivo *
+                                  </label>
+                                  <input
+                                    id="level-reason"
+                                    type="text"
+                                    value={newLevelEntry.reason || ''}
+                                    onChange={(e) => setNewLevelEntry({...newLevelEntry, reason: e.target.value})}
+                                    className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500"
+                                    placeholder="Ex: Promoção por mérito"
+                                    aria-describedby="level-reason-help"
+                                  />
+                                  <div id="level-reason-help" className="sr-only">Motivo da alteração do nível</div>
+                                </div>
+                                <div className="sm:col-span-2 lg:col-span-1">
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      if (!newLevelEntry.value || !newLevelEntry.startDate || !newLevelEntry.reason) {
+                                        setLevelMessage({ type: 'error', text: 'Nível, Data de Início e Motivo são obrigatórios' });
+                                        return;
+                                      }
+                                      
+                                      const newEntry = {
+                                        id: Date.now(),
+                                        value: newLevelEntry.value,
+                                        startDate: newLevelEntry.startDate,
+                                        endDate: newLevelEntry.endDate || null,
+                                        reason: newLevelEntry.reason
+                                      };
+                                      
+                                      // Validar entrada
+                                      const errors = validateHistoryEntry(formData.levelHistory || [], newEntry);
+                                      if (errors.length > 0) {
+                                        setLevelMessage({ type: 'error', text: errors.join(', ') });
+                                        return;
+                                      }
+                                      
+                                      setFormData({
+                                        ...formData,
+                                        levelHistory: [...(formData.levelHistory || []), newEntry]
+                                      });
+                                      
+                                      // Limpar campos
+                                      setNewLevelEntry({ value: '', startDate: '', endDate: '', reason: '' });
+                                      setLevelMessage({ type: 'success', text: 'Registro adicionado com sucesso!' });
+                                      
+                                      // Limpar mensagem após 3 segundos
+                                      setTimeout(() => setLevelMessage(null), 3000);
+                                    }}
+                                    className="w-full text-sm bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700 font-medium transition-colors"
+                                    aria-label="Adicionar novo registro de nível"
+                                  >
+                                    + Adicionar
+                                  </button>
+                                </div>
+                              </div>
+                              
+                              {/* Mensagem de feedback */}
+                              {levelMessage && (
+                                <div className={`mt-2 text-xs px-2 py-1 rounded ${
+                                  levelMessage.type === 'success' 
+                                    ? 'bg-green-100 text-green-800' 
+                                    : 'bg-red-100 text-red-800'
+                                }`}>
+                                  {levelMessage.text}
+                                </div>
+                              )}
+                            </div>
                           </div>
+                          
                           {formData.levelHistory && formData.levelHistory.length > 0 ? (
                             <div className="space-y-2">
                               <div className="grid grid-cols-5 gap-2 text-xs font-medium text-gray-600 border-b pb-2">
