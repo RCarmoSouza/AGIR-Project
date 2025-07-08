@@ -1,28 +1,11 @@
 import React, { useState, useMemo } from 'react';
 import { 
-  UserGroupIcon, 
-  ClockIcon, 
-  CurrencyDollarIcon,
-  ChartBarIcon,
-  ArrowTrendingUpIcon,
-  ArrowTrendingDownIcon
-} from '@heroicons/react/24/outline';
-import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  Legend,
-  ResponsiveContainer,
-  PieChart,
-  Pie,
-  Cell
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
+  PieChart, Pie, Cell
 } from 'recharts';
 
 const ResourceUsagePanel = () => {
-  // Estados para filtros
+  // Estado para controlar os filtros
   const [filters, setFilters] = useState({
     startDate: '2025-01-01',
     endDate: '2025-01-31',
@@ -33,6 +16,9 @@ const ResourceUsagePanel = () => {
     project: '',
     status: 'active'
   });
+
+  // Estado para controlar a visualização (por pessoa ou por especialização)
+  const [viewMode, setViewMode] = useState('person'); // 'person' ou 'specialization'
 
   // Dados mock para demonstração
   const mockData = {
@@ -245,7 +231,6 @@ const ResourceUsagePanel = () => {
       }
       specializationGroups[person.specialization] += calculateContractHours(person, filters.startDate, filters.endDate);
     });
-
     const hoursPerSpecialization = Object.keys(specializationGroups).map(spec => ({
       name: spec,
       hours: specializationGroups[spec]
@@ -257,6 +242,49 @@ const ResourceUsagePanel = () => {
       hoursPerSpecialization
     };
   }, [filteredPeople, filters.startDate, filters.endDate, metrics]);
+
+  // Dados agregados por especialização
+  const specializationData = useMemo(() => {
+    const data = {};
+    
+    // Agrupar pessoas por especialização
+    filteredPeople.forEach(person => {
+      if (!data[person.specialization]) {
+        data[person.specialization] = {
+          specialization: person.specialization,
+          people: [],
+          contractHours: 0,
+          allocatedHours: 0,
+          availableHours: 0,
+          utilization: 0,
+          averageRate: 0
+        };
+      }
+      
+      data[person.specialization].people.push(person);
+    });
+    
+    // Calcular métricas para cada especialização
+    Object.values(data).forEach(item => {
+      const activePeople = item.people.filter(p => p.status === 'active');
+      
+      item.people.forEach(person => {
+        const contractHours = calculateContractHours(person, filters.startDate, filters.endDate);
+        const allocatedHours = calculateAllocatedHours(person, filters.startDate, filters.endDate);
+        const availableHours = calculateAvailableHours(person, filters.startDate, filters.endDate);
+        
+        item.contractHours += contractHours;
+        item.allocatedHours += allocatedHours;
+        item.availableHours += availableHours;
+      });
+      
+      item.utilization = item.contractHours > 0 ? Math.round((item.allocatedHours / item.contractHours) * 100) : 0;
+      item.averageRate = activePeople.length > 0 ? Math.round(activePeople.reduce((sum, p) => sum + p.hourlyRate, 0) / activePeople.length) : 0;
+      item.estimatedAvailabilityCost = item.availableHours * item.averageRate;
+    });
+    
+    return Object.values(data);
+  }, [filteredPeople, filters.startDate, filters.endDate]);
 
   // Cores para gráficos
   const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8', '#82CA9D'];
@@ -280,134 +308,125 @@ const ResourceUsagePanel = () => {
     setFilters(prev => ({ ...prev, [key]: value }));
   };
 
+  // Função para navegar para a página de detalhamento
+  const navigateToDetail = (specialization) => {
+    // Em uma aplicação real, isso seria uma navegação para outra rota
+    // Por enquanto, vamos apenas simular alterando o filtro de especialização
+    handleFilterChange('specialization', specialization);
+    // E alterando a visualização para pessoas
+    setViewMode('person');
+  };
+
   return (
     <div className="p-6 space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Painel de Uso de Recursos</h1>
-          <p className="mt-1 text-sm text-gray-500">
-            Visualize e gerencie a alocação de recursos em projetos
-          </p>
+          <p className="text-gray-600">Visualize e gerencie a alocação de recursos em projetos</p>
         </div>
-        
-        <div className="mt-4 sm:mt-0 flex items-center space-x-3">
-          {/* Período - Data Início */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">De:</label>
+        <div className="flex flex-col sm:flex-row gap-2 mt-4 md:mt-0">
+          <div className="flex flex-col">
+            <label className="text-sm font-medium text-gray-700">De:</label>
             <input
               type="date"
               value={filters.startDate}
               onChange={(e) => handleFilterChange('startDate', e.target.value)}
-              className="rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm"
+              className="border border-gray-300 rounded-md p-2 text-sm"
             />
           </div>
-
-          {/* Período - Data Fim */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Até:</label>
+          <div className="flex flex-col">
+            <label className="text-sm font-medium text-gray-700">Até:</label>
             <input
               type="date"
               value={filters.endDate}
               onChange={(e) => handleFilterChange('endDate', e.target.value)}
-              className="rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm"
+              className="border border-gray-300 rounded-md p-2 text-sm"
             />
           </div>
         </div>
       </div>
 
-      {/* Filtros Avançados - Sempre Visíveis */}
+      {/* Filtros */}
       <div className="bg-white shadow rounded-lg p-6">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-medium text-gray-900">Filtros Avançados</h3>
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-lg font-medium text-gray-900">Filtros Avançados</h2>
           <button
             onClick={clearFilters}
-            className="text-sm text-blue-600 hover:text-blue-500"
+            className="px-3 py-1 text-sm text-blue-600 hover:text-blue-800 border border-blue-600 hover:border-blue-800 rounded"
           >
             Limpar Filtros
           </button>
         </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
-          {/* Filtro por Base */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Base</label>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="flex flex-col">
+            <label className="text-sm font-medium text-gray-700">Base</label>
             <select
               value={filters.base}
               onChange={(e) => handleFilterChange('base', e.target.value)}
-              className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm"
+              className="border border-gray-300 rounded-md p-2 text-sm"
             >
               <option value="">Todas as bases</option>
-              {mockData.bases.map(base => (
-                <option key={base} value={base}>{base}</option>
+              {mockData.bases.map((base, index) => (
+                <option key={index} value={base}>{base}</option>
               ))}
             </select>
           </div>
-
-          {/* Filtro por Equipe */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Equipe</label>
+          <div className="flex flex-col">
+            <label className="text-sm font-medium text-gray-700">Equipe</label>
             <select
               value={filters.team}
               onChange={(e) => handleFilterChange('team', e.target.value)}
-              className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm"
+              className="border border-gray-300 rounded-md p-2 text-sm"
             >
               <option value="">Todas as equipes</option>
-              {mockData.teams.map(team => (
-                <option key={team} value={team}>{team}</option>
+              {mockData.teams.map((team, index) => (
+                <option key={index} value={team}>{team}</option>
               ))}
             </select>
           </div>
-
-          {/* Filtro por Especialização */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Especialização</label>
+          <div className="flex flex-col">
+            <label className="text-sm font-medium text-gray-700">Especialização</label>
             <select
               value={filters.specialization}
               onChange={(e) => handleFilterChange('specialization', e.target.value)}
-              className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm"
+              className="border border-gray-300 rounded-md p-2 text-sm"
             >
               <option value="">Todas as especializações</option>
-              {specializations.map(spec => (
-                <option key={spec} value={spec}>{spec}</option>
+              {specializations.map((spec, index) => (
+                <option key={index} value={spec}>{spec}</option>
               ))}
             </select>
           </div>
-
-          {/* Filtro por Pessoa */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Pessoa</label>
+          <div className="flex flex-col">
+            <label className="text-sm font-medium text-gray-700">Pessoa</label>
             <input
               type="text"
               placeholder="Buscar por nome..."
               value={filters.person}
               onChange={(e) => handleFilterChange('person', e.target.value)}
-              className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm"
+              className="border border-gray-300 rounded-md p-2 text-sm"
             />
           </div>
-
-          {/* Filtro por Projeto */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Projeto</label>
+          <div className="flex flex-col">
+            <label className="text-sm font-medium text-gray-700">Projeto</label>
             <select
               value={filters.project}
               onChange={(e) => handleFilterChange('project', e.target.value)}
-              className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm"
+              className="border border-gray-300 rounded-md p-2 text-sm"
             >
               <option value="">Todos os projetos</option>
-              {mockData.projects.map(project => (
-                <option key={project.id} value={project.name}>{project.name}</option>
+              {mockData.projects.map((project, index) => (
+                <option key={index} value={project.name}>{project.name}</option>
               ))}
             </select>
           </div>
-
-          {/* Filtro por Status */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+          <div className="flex flex-col">
+            <label className="text-sm font-medium text-gray-700">Status</label>
             <select
               value={filters.status}
               onChange={(e) => handleFilterChange('status', e.target.value)}
-              className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm"
+              className="border border-gray-300 rounded-md p-2 text-sm"
             >
               <option value="">Todos</option>
               <option value="active">Ativo</option>
@@ -417,140 +436,103 @@ const ResourceUsagePanel = () => {
         </div>
       </div>
 
-      {/* Cards de Indicadores */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-6">
-        {/* Total de Pessoas */}
-        <div className="bg-white overflow-hidden shadow rounded-lg">
-          <div className="p-5">
-            <div className="flex items-center">
-              <div className="flex-shrink-0">
-                <UserGroupIcon className="h-6 w-6 text-gray-400" />
-              </div>
-              <div className="ml-5 w-0 flex-1">
-                <dl>
-                  <dt className="text-sm font-medium text-gray-500 truncate">Total de Pessoas</dt>
-                  <dd className="text-lg font-medium text-gray-900">{metrics.totalPeople}</dd>
-                </dl>
-              </div>
-            </div>
+      {/* Cards de Métricas */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+        <div className="bg-white shadow rounded-lg p-4 flex items-center">
+          <div className="rounded-full bg-gray-100 p-3 mr-4">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+            </svg>
+          </div>
+          <div>
+            <p className="text-sm text-gray-500">Total de Pessoas</p>
+            <p className="text-xl font-bold">{metrics.totalPeople}</p>
           </div>
         </div>
-
-        {/* Pessoas Ativas */}
-        <div className="bg-white overflow-hidden shadow rounded-lg">
-          <div className="p-5">
-            <div className="flex items-center">
-              <div className="flex-shrink-0">
-                <UserGroupIcon className="h-6 w-6 text-green-400" />
-              </div>
-              <div className="ml-5 w-0 flex-1">
-                <dl>
-                  <dt className="text-sm font-medium text-gray-500 truncate">Pessoas Ativas</dt>
-                  <dd className="text-lg font-medium text-gray-900">{metrics.activePeople}</dd>
-                </dl>
-              </div>
-            </div>
+        <div className="bg-white shadow rounded-lg p-4 flex items-center">
+          <div className="rounded-full bg-green-100 p-3 mr-4">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+          <div>
+            <p className="text-sm text-gray-500">Pessoas Ativas</p>
+            <p className="text-xl font-bold">{metrics.activePeople}</p>
           </div>
         </div>
-
-        {/* Utilização Média */}
-        <div className="bg-white overflow-hidden shadow rounded-lg">
-          <div className="p-5">
-            <div className="flex items-center">
-              <div className="flex-shrink-0">
-                <ChartBarIcon className="h-6 w-6 text-blue-400" />
-              </div>
-              <div className="ml-5 w-0 flex-1">
-                <dl>
-                  <dt className="text-sm font-medium text-gray-500 truncate">Utilização Média</dt>
-                  <dd className="flex items-center">
-                    <span className="text-lg font-medium text-gray-900">{metrics.utilization}%</span>
-                    {metrics.utilization >= 80 ? (
-                      <ArrowTrendingUpIcon className="h-4 w-4 text-red-500 ml-1" />
-                    ) : (
-                      <ArrowTrendingDownIcon className="h-4 w-4 text-green-500 ml-1" />
-                    )}
-                  </dd>
-                </dl>
-              </div>
-            </div>
+        <div className="bg-white shadow rounded-lg p-4 flex items-center">
+          <div className="rounded-full bg-blue-100 p-3 mr-4">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+            </svg>
+          </div>
+          <div>
+            <p className="text-sm text-gray-500">Utilização Média</p>
+            <p className="text-xl font-bold">{metrics.utilization}%</p>
           </div>
         </div>
-
-        {/* Total de Horas */}
-        <div className="bg-white overflow-hidden shadow rounded-lg">
-          <div className="p-5">
-            <div className="flex items-center">
-              <div className="flex-shrink-0">
-                <ClockIcon className="h-6 w-6 text-purple-400" />
-              </div>
-              <div className="ml-5 w-0 flex-1">
-                <dl>
-                  <dt className="text-sm font-medium text-gray-500 truncate">Total de Horas</dt>
-                  <dd className="text-lg font-medium text-gray-900">{metrics.totalContractHours}h</dd>
-                </dl>
-              </div>
-            </div>
+        <div className="bg-white shadow rounded-lg p-4 flex items-center">
+          <div className="rounded-full bg-purple-100 p-3 mr-4">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-purple-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+          <div>
+            <p className="text-sm text-gray-500">Total de Horas</p>
+            <p className="text-xl font-bold">{metrics.totalContractHours}h</p>
           </div>
         </div>
-
-        {/* Taxa Média/Hora */}
-        <div className="bg-white overflow-hidden shadow rounded-lg">
-          <div className="p-5">
-            <div className="flex items-center">
-              <div className="flex-shrink-0">
-                <CurrencyDollarIcon className="h-6 w-6 text-yellow-400" />
-              </div>
-              <div className="ml-5 w-0 flex-1">
-                <dl>
-                  <dt className="text-sm font-medium text-gray-500 truncate">Taxa Média/Hora</dt>
-                  <dd className="text-lg font-medium text-gray-900">R$ {metrics.averageRate}</dd>
-                </dl>
-              </div>
-            </div>
+        <div className="bg-white shadow rounded-lg p-4 flex items-center">
+          <div className="rounded-full bg-yellow-100 p-3 mr-4">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-yellow-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+          <div>
+            <p className="text-sm text-gray-500">Taxa Média/Hora</p>
+            <p className="text-xl font-bold">R$ {metrics.averageRate}</p>
           </div>
         </div>
-
-        {/* Custo Total */}
-        <div className="bg-white overflow-hidden shadow rounded-lg">
-          <div className="p-5">
-            <div className="flex items-center">
-              <div className="flex-shrink-0">
-                <CurrencyDollarIcon className="h-6 w-6 text-red-400" />
-              </div>
-              <div className="ml-5 w-0 flex-1">
-                <dl>
-                  <dt className="text-sm font-medium text-gray-500 truncate">Custo Total</dt>
-                  <dd className="text-lg font-medium text-gray-900">R$ {metrics.totalCost.toLocaleString()}</dd>
-                </dl>
-              </div>
-            </div>
+        <div className="bg-white shadow rounded-lg p-4 flex items-center">
+          <div className="rounded-full bg-red-100 p-3 mr-4">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
+            </svg>
+          </div>
+          <div>
+            <p className="text-sm text-gray-500">Custo Total</p>
+            <p className="text-xl font-bold">R$ {metrics.totalCost.toLocaleString()}</p>
           </div>
         </div>
       </div>
 
       {/* Gráficos */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Gráfico de Utilização por Pessoa */}
         <div className="bg-white shadow rounded-lg p-6">
           <h3 className="text-lg font-medium text-gray-900 mb-4">Utilização por Pessoa</h3>
-          <div className="h-80">
+          <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart
                 data={chartData.utilizationByPerson}
+                layout="vertical"
                 margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
               >
                 <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="name" />
-                <YAxis unit="%" />
+                <XAxis type="number" domain={[0, 100]} />
+                <YAxis dataKey="name" type="category" width={100} />
                 <Tooltip formatter={(value) => [`${value}%`, 'Utilização']} />
-                <Legend />
-                <Bar 
-                  dataKey="utilization" 
-                  name="Utilização" 
-                  fill="#3B82F6"
-                  radius={[4, 4, 0, 0]}
-                />
+                <Bar dataKey="utilization" fill="#8884d8">
+                  {chartData.utilizationByPerson.map((entry, index) => (
+                    <Cell 
+                      key={`cell-${index}`} 
+                      fill={
+                        entry.utilization >= 100 ? '#ef4444' : 
+                        entry.utilization >= 80 ? '#f59e0b' : '#22c55e'
+                      } 
+                    />
+                  ))}
+                </Bar>
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -559,109 +541,128 @@ const ResourceUsagePanel = () => {
         {/* Gráfico de Distribuição de Horas */}
         <div className="bg-white shadow rounded-lg p-6">
           <h3 className="text-lg font-medium text-gray-900 mb-4">Distribuição de Horas</h3>
-          <div className="h-80">
+          <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie
                   data={chartData.hoursDistribution}
                   cx="50%"
                   cy="50%"
-                  labelLine={true}
-                  label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                  labelLine={false}
                   outerRadius={80}
                   fill="#8884d8"
                   dataKey="value"
+                  label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
                 >
                   {chartData.hoursDistribution.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                   ))}
                 </Pie>
-                <Tooltip formatter={(value) => [`${value}h`, 'Horas']} />
-                <Legend />
+                <Tooltip formatter={(value) => [`${value}h`, '']} />
               </PieChart>
             </ResponsiveContainer>
           </div>
         </div>
 
         {/* Gráfico de Horas por Especialização */}
-        <div className="bg-white shadow rounded-lg p-6 lg:col-span-2">
+        <div className="bg-white shadow rounded-lg p-6">
           <h3 className="text-lg font-medium text-gray-900 mb-4">Horas por Especialização</h3>
-          <div className="h-80">
+          <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart
                 data={chartData.hoursPerSpecialization}
                 margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
               >
                 <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="name" />
-                <YAxis unit="h" />
+                <XAxis dataKey="name" angle={-45} textAnchor="end" height={70} />
+                <YAxis />
                 <Tooltip formatter={(value) => [`${value}h`, 'Horas']} />
-                <Legend />
-                <Bar 
-                  dataKey="hours" 
-                  name="Horas" 
-                  fill="#10B981"
-                  radius={[4, 4, 0, 0]}
-                />
+                <Bar dataKey="hours" fill="#82ca9d" />
               </BarChart>
             </ResponsiveContainer>
           </div>
         </div>
       </div>
 
-      {/* Grade de Alocação */}
-      <div className="bg-white shadow rounded-lg overflow-hidden">
-        <div className="px-6 py-4 border-b border-gray-200">
-          <div className="flex items-center justify-between">
-            <h3 className="text-lg font-medium text-gray-900">Grade de Alocação</h3>
+      {/* Seletor de Visualização */}
+      <div className="bg-white shadow rounded-lg p-4">
+        <div className="flex justify-between items-center mb-4">
+          <h3 className="text-lg font-medium text-gray-900">Grade de Alocação</h3>
+          <div className="flex space-x-2">
+            <button
+              onClick={() => setViewMode('person')}
+              className={`px-3 py-1 text-sm rounded ${
+                viewMode === 'person' 
+                  ? 'bg-blue-600 text-white' 
+                  : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+              }`}
+            >
+              Por Pessoa
+            </button>
+            <button
+              onClick={() => setViewMode('specialization')}
+              className={`px-3 py-1 text-sm rounded ${
+                viewMode === 'specialization' 
+                  ? 'bg-blue-600 text-white' 
+                  : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+              }`}
+            >
+              Por Especialização
+            </button>
           </div>
         </div>
-        
-        {filteredPeople.length === 0 ? (
-          <div className="text-center py-12">
-            <UserGroupIcon className="mx-auto h-12 w-12 text-gray-400" />
-            <h3 className="mt-2 text-sm font-medium text-gray-900">Nenhuma pessoa encontrada</h3>
-            <p className="mt-1 text-sm text-gray-500">Ajuste os filtros para ver os resultados.</p>
-          </div>
-        ) : (
+
+        {/* Grade de Alocação por Pessoa */}
+        {viewMode === 'person' && (
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Pessoa</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Informações Profissionais</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Base</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Horas Contratuais</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Horas Alocadas</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Horas Disponíveis</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Utilização</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Custo Estimado de Disponibilidade</th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Pessoa
+                  </th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Informações Profissionais
+                  </th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Base
+                  </th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Horas Contratuais
+                  </th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Horas Alocadas
+                  </th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Horas Disponíveis
+                  </th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Utilização
+                  </th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Custo Estimado de Disponibilidade
+                  </th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {filteredPeople.map((person) => {
+                {filteredPeople.map(person => {
                   const contractHours = calculateContractHours(person, filters.startDate, filters.endDate);
                   const allocatedHours = calculateAllocatedHours(person, filters.startDate, filters.endDate);
                   const availableHours = calculateAvailableHours(person, filters.startDate, filters.endDate);
                   const utilization = contractHours > 0 ? Math.round((allocatedHours / contractHours) * 100) : 0;
-                  // Alterado: Custo estimado de disponibilidade = Taxa × Horas Disponíveis
-                  const estimatedAvailabilityCost = person.hourlyRate * availableHours;
                   const workingDays = calculateWorkingDays(filters.startDate, filters.endDate);
+                  const estimatedAvailabilityCost = availableHours * person.hourlyRate;
 
                   return (
-                    <tr key={person.id} className="hover:bg-gray-50">
+                    <tr key={person.id}>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center">
-                          <div>
-                            <div className="text-sm font-medium text-gray-900">{person.name}</div>
-                            <div className="flex items-center mt-1">
-                              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                                person.status === 'active' 
-                                  ? 'bg-green-100 text-green-800' 
-                                  : 'bg-red-100 text-red-800'
-                              }`}>
-                                {person.status === 'active' ? 'Ativo' : 'Inativo'}
-                              </span>
+                          <div className="ml-4">
+                            <div className="text-sm font-medium text-gray-900">
+                              {person.name}
+                            </div>
+                            <div className={`text-xs ${person.status === 'active' ? 'text-green-600' : 'text-red-600'}`}>
+                              {person.status === 'active' ? 'Ativo' : 'Inativo'}
                             </div>
                           </div>
                         </div>
@@ -723,6 +724,103 @@ const ResourceUsagePanel = () => {
                     </tr>
                   );
                 })}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        {/* Grade de Alocação por Especialização */}
+        {viewMode === 'specialization' && (
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Especialização
+                  </th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Horas Contratuais
+                  </th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Horas Alocadas
+                  </th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Horas Disponíveis
+                  </th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Utilização
+                  </th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Custo Estimado de Disponibilidade
+                  </th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Ações
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {specializationData.map((item, index) => (
+                  <tr key={index}>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm font-medium text-gray-900">{item.specialization}</div>
+                      <div className="text-xs text-gray-500">{item.people.length} pessoas</div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm text-gray-900">
+                        {item.contractHours}h
+                        <div className="text-xs text-gray-500">
+                          {calculateWorkingDays(filters.startDate, filters.endDate)} dias úteis
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm text-gray-900">
+                        {item.allocatedHours}h
+                        <div className="w-full bg-gray-200 rounded-full h-2 mt-1">
+                          <div 
+                            className={`h-2 rounded-full ${
+                              item.utilization >= 100 ? 'bg-red-500' : 
+                              item.utilization >= 80 ? 'bg-yellow-500' : 'bg-green-500'
+                            }`}
+                            style={{ width: `${Math.min(item.utilization, 100)}%` }}
+                          ></div>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm text-gray-900">
+                        {item.availableHours}h
+                        <div className="text-xs text-gray-500">
+                          {item.contractHours > 0 ? `${Math.round((item.availableHours / item.contractHours) * 100)}% livre` : 'N/A'}
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className={`text-sm font-medium ${
+                        item.utilization >= 100 ? 'text-red-600' : 
+                        item.utilization >= 80 ? 'text-yellow-600' : 'text-green-600'
+                      }`}>
+                        {item.utilization}%
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm text-gray-900">
+                        R$ {item.estimatedAvailabilityCost.toLocaleString()}
+                        <div className="text-xs text-gray-500">
+                          {item.availableHours}h × R$ {item.averageRate}
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                      <button
+                        onClick={() => navigateToDetail(item.specialization)}
+                        className="text-blue-600 hover:text-blue-900 bg-blue-100 hover:bg-blue-200 px-3 py-1 rounded"
+                      >
+                        Detalhar
+                      </button>
+                    </td>
+                  </tr>
+                ))}
               </tbody>
             </table>
           </div>
