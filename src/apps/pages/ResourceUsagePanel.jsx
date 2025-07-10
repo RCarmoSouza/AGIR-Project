@@ -1,10 +1,14 @@
 import React, { useState, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { EyeIcon } from '@heroicons/react/24/outline';
 import { 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
   PieChart, Pie, Cell
 } from 'recharts';
 
 const ResourceUsagePanel = () => {
+  const navigate = useNavigate();
+  
   // Estado para controlar os filtros
   const [filters, setFilters] = useState({
     startDate: '2025-01-01',
@@ -32,7 +36,8 @@ const ResourceUsagePanel = () => {
         specialization: 'Gestão de Projetos',
         hourlyRate: 150, 
         status: 'active',
-        hoursPerDay: 8
+        activeContractType: 'efetivo', // Tipo de contrato ativo
+        calendarId: 1 // ID do calendário associado
       },
       { 
         id: 2, 
@@ -43,7 +48,8 @@ const ResourceUsagePanel = () => {
         specialization: 'Full Stack',
         hourlyRate: 120, 
         status: 'active',
-        hoursPerDay: 8
+        activeContractType: 'efetivo',
+        calendarId: 2
       },
       { 
         id: 3, 
@@ -54,7 +60,8 @@ const ResourceUsagePanel = () => {
         specialization: 'UI/UX Design',
         hourlyRate: 100, 
         status: 'inactive',
-        hoursPerDay: 8
+        activeContractType: 'meio_turno',
+        calendarId: 3
       },
       { 
         id: 4, 
@@ -65,7 +72,41 @@ const ResourceUsagePanel = () => {
         specialization: 'Front-End',
         hourlyRate: 80, 
         status: 'active',
-        hoursPerDay: 8
+        activeContractType: 'estagio',
+        calendarId: 1
+      }
+    ],
+    // Dados dos calendários com horários por contrato
+    calendars: [
+      {
+        id: 1,
+        name: 'Padrão Porto Alegre',
+        contractSchedules: {
+          efetivo: { dailyHours: 8, enabled: true },
+          estagio: { dailyHours: 6, enabled: true },
+          meio_turno: { dailyHours: 4, enabled: true },
+          horista: { dailyHours: 0, enabled: false }
+        }
+      },
+      {
+        id: 2,
+        name: 'Padrão São Paulo',
+        contractSchedules: {
+          efetivo: { dailyHours: 8, enabled: true },
+          estagio: { dailyHours: 6, enabled: true },
+          meio_turno: { dailyHours: 4, enabled: true },
+          horista: { dailyHours: 0, enabled: false }
+        }
+      },
+      {
+        id: 3,
+        name: 'Calendário Flexível',
+        contractSchedules: {
+          efetivo: { dailyHours: 6, enabled: true },
+          estagio: { dailyHours: 4, enabled: true },
+          meio_turno: { dailyHours: 3, enabled: true },
+          horista: { dailyHours: 0, enabled: false }
+        }
       }
     ],
     bases: ['Porto Alegre', 'São Paulo', 'Rio de Janeiro'],
@@ -109,12 +150,23 @@ const ResourceUsagePanel = () => {
     return workingDays;
   };
 
-  // Função para calcular horas contratuais baseado no período
+  // Função para calcular horas contratuais baseado no período, contrato ativo e calendário
   const calculateContractHours = (person, startDate, endDate) => {
     if (person.status !== 'active') return 0;
     
+    // Buscar o calendário da pessoa
+    const calendar = mockData.calendars.find(c => c.id === person.calendarId);
+    if (!calendar) return 0;
+    
+    // Buscar o horário específico para o tipo de contrato ativo
+    const contractSchedule = calendar.contractSchedules[person.activeContractType];
+    if (!contractSchedule || !contractSchedule.enabled) return 0;
+    
+    // Para contratos horistas (dailyHours = 0), retornar 0 horas contratuais
+    if (contractSchedule.dailyHours === 0) return 0;
+    
     const workingDays = calculateWorkingDays(startDate, endDate);
-    const hoursPerDay = person.hoursPerDay || 8;
+    const hoursPerDay = contractSchedule.dailyHours;
     
     return workingDays * hoursPerDay;
   };
@@ -657,12 +709,23 @@ const ResourceUsagePanel = () => {
                     <tr key={person.id}>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center">
-                          <div className="ml-4">
-                            <div className="text-sm font-medium text-gray-900">
-                              {person.name}
-                            </div>
-                            <div className={`text-xs ${person.status === 'active' ? 'text-green-600' : 'text-red-600'}`}>
-                              {person.status === 'active' ? 'Ativo' : 'Inativo'}
+                          <div className="ml-4 flex-1">
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <div className="text-sm font-medium text-gray-900">
+                                  {person.name}
+                                </div>
+                                <div className={`text-xs ${person.status === 'active' ? 'text-green-600' : 'text-red-600'}`}>
+                                  {person.status === 'active' ? 'Ativo' : 'Inativo'}
+                                </div>
+                              </div>
+                              <button
+                                onClick={() => navigate(`/people/people/${person.id}`)}
+                                className="ml-2 p-1 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded"
+                                title="Visualizar pessoa"
+                              >
+                                <EyeIcon className="h-4 w-4" />
+                              </button>
                             </div>
                           </div>
                         </div>

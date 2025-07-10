@@ -1,0 +1,1383 @@
+import React, { useState, useEffect } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { 
+  ArrowLeftIcon,
+  PencilIcon,
+  TrashIcon,
+  EllipsisVerticalIcon,
+  UserIcon,
+  EnvelopeIcon,
+  PhoneIcon,
+  BuildingOfficeIcon,
+  CalendarIcon,
+  CurrencyDollarIcon,
+  StarIcon,
+  TagIcon,
+  ClockIcon,
+  DocumentTextIcon,
+  PlusIcon,
+  XMarkIcon,
+  LightBulbIcon,
+  InformationCircleIcon
+} from '@heroicons/react/24/outline';
+
+const PersonDetail = () => {
+  const { id } = useParams();
+  const navigate = useNavigate();
+  const [person, setPerson] = useState(null);
+  const [isEditing, setIsEditing] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [formData, setFormData] = useState({});
+  const [activeTab, setActiveTab] = useState('personal');
+  
+  // Estados para adição de contratos, níveis e admissões/encerramentos
+  const [isAddingContract, setIsAddingContract] = useState(false);
+  const [isAddingLevel, setIsAddingLevel] = useState(false);
+  const [isAddingEmployment, setIsAddingEmployment] = useState(false);
+  const [newContract, setNewContract] = useState({
+    value: '',
+    contractType: '',
+    startDate: '',
+    endDate: '',
+    reason: ''
+  });
+  const [newLevel, setNewLevel] = useState({
+    value: '',
+    startDate: '',
+    endDate: '',
+    reason: ''
+  });
+  const [newEmployment, setNewEmployment] = useState({
+    type: '',
+    date: '',
+    reason: ''
+  });
+
+  // Estados para encerramento de registros ativos
+  const [isEndingContract, setIsEndingContract] = useState(false);
+  const [isEndingLevel, setIsEndingLevel] = useState(false);
+  const [isEndingEmployment, setIsEndingEmployment] = useState(false);
+  const [endingContractId, setEndingContractId] = useState(null);
+  const [endingLevelId, setEndingLevelId] = useState(null);
+  const [endingEmploymentId, setEndingEmploymentId] = useState(null);
+  const [endDate, setEndDate] = useState('');
+
+  // Dados auxiliares
+  const contractTypes = [
+    { value: 'efetivo', label: 'Efetivo (8h/dia)' },
+    { value: 'estagio', label: 'Estágio (6h/dia)' },
+    { value: 'meio_turno', label: 'Meio Turno (4h/dia)' },
+    { value: 'horista', label: 'Horista (0h/dia)' }
+  ];
+
+  const specializations = [
+    'Full Stack', 'Front-End', 'Back-End', 'Mobile', 'DevOps', 'Data Science',
+    'Machine Learning', 'UI/UX Design', 'Product Design', 'Scrum Master',
+    'Product Owner', 'Arquitetura de Software', 'Segurança da Informação',
+    'Cloud Computing', 'Business Intelligence', 'Análise de Dados',
+    'Testes e QA', 'Infraestrutura', 'Gestão de Projetos'
+  ];
+
+  const levels = ['Estágio', 'Júnior', 'Pleno', 'Sênior', 'Especialista', 'Líder Técnico', 'Gerente'];
+
+  const employmentTypes = [
+    { value: 'admission', label: 'Admissão' },
+    { value: 'dismissal', label: 'Encerramento' },
+    { value: 'transfer', label: 'Transferência' },
+    { value: 'promotion', label: 'Promoção' },
+    { value: 'return', label: 'Retorno' }
+  ];
+
+  const skills = [
+    'React', 'Node.js', 'TypeScript', 'JavaScript', 'Python', 'Java',
+    'PostgreSQL', 'MongoDB', 'AWS', 'Docker', 'Kubernetes', 'Gestão de Projetos',
+    'Scrum', 'Kanban', 'Liderança', 'Figma', 'Adobe XD', 'Design System',
+    'Prototipagem', 'Testes Automatizados', 'Selenium', 'Jest'
+  ];
+
+  // Mock data - em produção viria da API
+  const mockPeople = [
+    {
+      id: 1,
+      name: 'Ana Silva',
+      email: 'ana.silva@empresa.com',
+      phone: '(11) 99999-9999',
+      position: 'Gerente de Projetos',
+      specialization: 'Gestão de Projetos',
+      base: 'Porto Alegre',
+      calendar: 'Padrão Porto Alegre',
+      skills: ['Gestão de Projetos', 'Scrum', 'Liderança'],
+      hourlyRate: 150,
+      leader: null,
+      status: 'active',
+      admissionDate: '2022-01-15',
+      dismissalDate: null,
+      notes: 'Gerente experiente com foco em metodologias ágeis',
+      avatar: null,
+      rateHistory: [
+        { 
+          id: 1,
+          value: 150, 
+          startDate: '2022-01-15', 
+          endDate: null,
+          reason: 'Admissão',
+          contractType: 'efetivo'
+        }
+      ],
+      levelHistory: [
+        { 
+          id: 1,
+          value: 'Sênior', 
+          startDate: '2022-01-15', 
+          endDate: null,
+          reason: 'Admissão'
+        }
+      ],
+      employmentHistory: [
+        {
+          type: 'admission',
+          date: '2022-01-15',
+          reason: 'Contratação inicial'
+        }
+      ]
+    }
+  ];
+
+  useEffect(() => {
+    // Simular carregamento da API
+    setTimeout(() => {
+      const foundPerson = mockPeople.find(p => p.id === parseInt(id));
+      if (foundPerson) {
+        setPerson(foundPerson);
+        setFormData(foundPerson);
+      }
+      setLoading(false);
+    }, 500);
+  }, [id]);
+
+  const handleSave = () => {
+    // Aqui seria feita a chamada para a API
+    setPerson(formData);
+    setIsEditing(false);
+    // Mostrar mensagem de sucesso
+  };
+
+  const handleCancel = () => {
+    setFormData(person);
+    setIsEditing(false);
+  };
+
+  const handleDelete = () => {
+    if (window.confirm('Tem certeza que deseja excluir esta pessoa?')) {
+      // Aqui seria feita a chamada para a API
+      navigate('/people/people');
+    }
+  };
+
+  const getActiveValue = (history) => {
+    if (!history || history.length === 0) return null;
+    
+    const today = new Date().toISOString().split('T')[0];
+    const activeRecord = history.find(record => 
+      !record.endDate || record.endDate > today
+    );
+    
+    if (activeRecord) return activeRecord.value;
+    
+    const sortedHistory = [...history].sort((a, b) => 
+      new Date(b.startDate) - new Date(a.startDate)
+    );
+    return sortedHistory[0]?.value || null;
+  };
+
+  const getActiveContractType = (person) => {
+    if (!person.rateHistory || person.rateHistory.length === 0) return null;
+    
+    const today = new Date().toISOString().split('T')[0];
+    const activeRecord = person.rateHistory.find(record => 
+      !record.endDate || record.endDate > today
+    );
+    
+    if (activeRecord) return activeRecord.contractType;
+    
+    const sortedHistory = [...person.rateHistory].sort((a, b) => 
+      new Date(b.startDate) - new Date(a.startDate)
+    );
+    return sortedHistory[0]?.contractType || null;
+  };
+
+  const getContractTypeLabel = (contractType) => {
+    const contract = contractTypes.find(c => c.value === contractType);
+    return contract ? contract.label : contractType;
+  };
+
+  // Funções para adicionar contratos
+  const handleAddContract = () => {
+    if (!newContract.value || !newContract.contractType || !newContract.startDate || !newContract.reason) {
+      alert('Por favor, preencha todos os campos obrigatórios.');
+      return;
+    }
+
+    // Desativar contrato anterior (adicionar data fim ao último ativo)
+    const updatedRateHistory = person.rateHistory.map(contract => {
+      if (!contract.endDate) {
+        return {
+          ...contract,
+          endDate: newContract.startDate // Data de início do novo contrato como fim do anterior
+        };
+      }
+      return contract;
+    });
+
+    // Adicionar novo contrato
+    const newContractRecord = {
+      id: Date.now(),
+      value: parseFloat(newContract.value),
+      contractType: newContract.contractType,
+      startDate: newContract.startDate,
+      endDate: newContract.endDate || null,
+      reason: newContract.reason
+    };
+
+    const updatedPerson = {
+      ...person,
+      rateHistory: [...updatedRateHistory, newContractRecord]
+    };
+
+    setPerson(updatedPerson);
+    setNewContract({
+      value: '',
+      contractType: '',
+      startDate: '',
+      endDate: '',
+      reason: ''
+    });
+    setIsAddingContract(false);
+  };
+
+  const handleCancelAddContract = () => {
+    setNewContract({
+      value: '',
+      contractType: '',
+      startDate: '',
+      endDate: '',
+      reason: ''
+    });
+    setIsAddingContract(false);
+  };
+
+  // Funções para adicionar níveis
+  const handleAddLevel = () => {
+    if (!newLevel.value || !newLevel.startDate || !newLevel.reason) {
+      alert('Por favor, preencha todos os campos obrigatórios.');
+      return;
+    }
+
+    // Desativar nível anterior (adicionar data fim ao último ativo)
+    const updatedLevelHistory = person.levelHistory.map(level => {
+      if (!level.endDate) {
+        return {
+          ...level,
+          endDate: newLevel.startDate // Data de início do novo nível como fim do anterior
+        };
+      }
+      return level;
+    });
+
+    // Adicionar novo nível
+    const newLevelRecord = {
+      id: Date.now(),
+      value: newLevel.value,
+      startDate: newLevel.startDate,
+      endDate: newLevel.endDate || null,
+      reason: newLevel.reason
+    };
+
+    const updatedPerson = {
+      ...person,
+      levelHistory: [...updatedLevelHistory, newLevelRecord]
+    };
+
+    setPerson(updatedPerson);
+    setNewLevel({
+      value: '',
+      startDate: '',
+      endDate: '',
+      reason: ''
+    });
+    setIsAddingLevel(false);
+  };
+
+  const handleCancelAddLevel = () => {
+    setNewLevel({
+      value: '',
+      startDate: '',
+      endDate: '',
+      reason: ''
+    });
+    setIsAddingLevel(false);
+  };
+
+  // Funções para adicionar admissões/encerramentos
+  const handleAddEmployment = () => {
+    if (!newEmployment.type || !newEmployment.date || !newEmployment.reason) {
+      alert('Por favor, preencha todos os campos obrigatórios.');
+      return;
+    }
+
+    // Para admissões, desativar admissão anterior
+    let updatedEmploymentHistory = [...person.employmentHistory];
+    if (newEmployment.type === 'admission') {
+      updatedEmploymentHistory = person.employmentHistory.map(employment => {
+        if (employment.type === 'admission' && !employment.endDate) {
+          return {
+            ...employment,
+            endDate: newEmployment.date // Data da nova admissão como fim da anterior
+          };
+        }
+        return employment;
+      });
+    }
+
+    // Adicionar novo registro
+    const newEmploymentRecord = {
+      id: Date.now(),
+      type: newEmployment.type,
+      date: newEmployment.date,
+      endDate: null, // Novo registro sempre começa ativo
+      reason: newEmployment.reason
+    };
+
+    const updatedPerson = {
+      ...person,
+      employmentHistory: [...updatedEmploymentHistory, newEmploymentRecord]
+    };
+
+    setPerson(updatedPerson);
+    setNewEmployment({
+      type: '',
+      date: '',
+      reason: ''
+    });
+    setIsAddingEmployment(false);
+  };
+
+  const handleCancelAddEmployment = () => {
+    setNewEmployment({
+      type: '',
+      date: '',
+      reason: ''
+    });
+    setIsAddingEmployment(false);
+  };
+
+  // Funções para encerramento de registros ativos
+  const handleEndContract = (contractId) => {
+    setEndingContractId(contractId);
+    setIsEndingContract(true);
+    setEndDate('');
+  };
+
+  const handleConfirmEndContract = () => {
+    if (!endDate) {
+      alert('Por favor, informe a data de encerramento.');
+      return;
+    }
+
+    const updatedPerson = {
+      ...person,
+      rateHistory: person.rateHistory.map(contract => 
+        contract.id === endingContractId 
+          ? { ...contract, endDate: endDate }
+          : contract
+      )
+    };
+
+    setPerson(updatedPerson);
+    setIsEndingContract(false);
+    setEndingContractId(null);
+    setEndDate('');
+  };
+
+  const handleEndLevel = (levelId) => {
+    setEndingLevelId(levelId);
+    setIsEndingLevel(true);
+    setEndDate('');
+  };
+
+  const handleConfirmEndLevel = () => {
+    if (!endDate) {
+      alert('Por favor, informe a data de encerramento.');
+      return;
+    }
+
+    const updatedPerson = {
+      ...person,
+      levelHistory: person.levelHistory.map(level => 
+        level.id === endingLevelId 
+          ? { ...level, endDate: endDate }
+          : level
+      )
+    };
+
+    setPerson(updatedPerson);
+    setIsEndingLevel(false);
+    setEndingLevelId(null);
+    setEndDate('');
+  };
+
+  const handleEndEmployment = (employmentId) => {
+    setEndingEmploymentId(employmentId);
+    setIsEndingEmployment(true);
+    setEndDate('');
+  };
+
+  const handleConfirmEndEmployment = () => {
+    if (!endDate) {
+      alert('Por favor, informe a data de encerramento.');
+      return;
+    }
+
+    const updatedPerson = {
+      ...person,
+      employmentHistory: person.employmentHistory.map(employment => 
+        employment.id === endingEmploymentId 
+          ? { ...employment, endDate: endDate }
+          : employment
+      )
+    };
+
+    setPerson(updatedPerson);
+    setIsEndingEmployment(false);
+    setEndingEmploymentId(null);
+    setEndDate('');
+  };
+
+  const handleCancelEnd = () => {
+    setIsEndingContract(false);
+    setIsEndingLevel(false);
+    setIsEndingEmployment(false);
+    setEndingContractId(null);
+    setEndingLevelId(null);
+    setEndingEmploymentId(null);
+    setEndDate('');
+  };
+
+  const getEmploymentTypeLabel = (type) => {
+    const employment = employmentTypes.find(e => e.value === type);
+    return employment ? employment.label : type;
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Carregando...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!person) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <UserIcon className="mx-auto h-12 w-12 text-gray-400" />
+          <h3 className="mt-2 text-sm font-medium text-gray-900">Pessoa não encontrada</h3>
+          <p className="mt-1 text-sm text-gray-500">A pessoa solicitada não existe ou foi removida.</p>
+          <button
+            onClick={() => navigate('/people/people')}
+            className="mt-4 inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
+          >
+            Voltar para lista
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <>
+      <div className="min-h-screen bg-gray-50">
+      {/* Header Otimizado */}
+      <header className="bg-white shadow-sm border-b border-gray-200">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between py-4">
+            {/* Link de volta */}
+            <button
+              onClick={() => navigate('/people/people')}
+              className="inline-flex items-center text-sm text-gray-500 hover:text-gray-700 transition-colors"
+              aria-label="Voltar para lista de pessoas"
+            >
+              <ArrowLeftIcon className="h-4 w-4 mr-1" />
+              Pessoas
+            </button>
+            
+            {/* Título principal */}
+            <div className="flex-1 text-center">
+              <h1 className="text-xl font-semibold text-gray-900">
+                {person.name} - {person.position}
+              </h1>
+            </div>
+            
+            {/* Botão Editar */}
+            <button
+              onClick={() => setIsEditing(!isEditing)}
+              className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 transition-colors"
+              title="Editar Perfil"
+              aria-label="Editar perfil da pessoa"
+            >
+              <PencilIcon className="h-4 w-4 mr-2" />
+              Editar
+            </button>
+          </div>
+          
+          {/* Badges compactos */}
+          <div className="flex flex-wrap justify-center gap-2 pb-4">
+            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+              person.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+            }`}>
+              <div className={`h-1.5 w-1.5 rounded-full mr-1.5 ${
+                person.status === 'active' ? 'bg-green-400' : 'bg-red-400'
+              }`}></div>
+              {person.status === 'active' ? 'Ativo' : 'Inativo'}
+            </span>
+            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-700">
+              <CalendarIcon className="h-3 w-3 mr-1" />
+              Admissão: {new Date(person.admissionDate).toLocaleDateString('pt-BR')}
+            </span>
+          </div>
+        </div>
+      </header>
+
+      {/* Content */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        {/* Layout de duas colunas */}
+        <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
+          
+          {/* Coluna Esquerda (60%) - Informações Pessoais + Históricos */}
+          <div className="lg:col-span-3 space-y-6">
+            
+            {/* Informações Pessoais */}
+            <div className="bg-white shadow-sm rounded-lg border border-gray-200">
+              <div className="px-6 py-4 border-b border-gray-200">
+                <h2 className="text-lg font-semibold text-gray-900">Informações Pessoais</h2>
+              </div>
+              <div className="p-6">
+                {/* Grade de duas colunas para campos */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Nome Completo
+                    </label>
+                    {isEditing ? (
+                      <input
+                        type="text"
+                        value={formData.name || ''}
+                        onChange={(e) => setFormData({...formData, name: e.target.value})}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                      />
+                    ) : (
+                      <div className="flex items-center">
+                        <UserIcon className="h-4 w-4 text-gray-400 mr-2" />
+                        <span className="text-gray-900">{person.name}</span>
+                      </div>
+                    )}
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Email
+                    </label>
+                    {isEditing ? (
+                      <input
+                        type="email"
+                        value={formData.email || ''}
+                        onChange={(e) => setFormData({...formData, email: e.target.value})}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                      />
+                    ) : (
+                      <div className="flex items-center">
+                        <EnvelopeIcon className="h-4 w-4 text-gray-400 mr-2" />
+                        <span className="text-gray-900">{person.email}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Telefone
+                    </label>
+                    {isEditing ? (
+                      <input
+                        type="tel"
+                        value={formData.phone || ''}
+                        onChange={(e) => setFormData({...formData, phone: e.target.value})}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                      />
+                    ) : (
+                      <div className="flex items-center">
+                        <PhoneIcon className="h-4 w-4 text-gray-400 mr-2" />
+                        <span className="text-gray-900">{person.phone}</span>
+                      </div>
+                    )}
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Cargo
+                    </label>
+                    {isEditing ? (
+                      <input
+                        type="text"
+                        value={formData.position || ''}
+                        onChange={(e) => setFormData({...formData, position: e.target.value})}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                      />
+                    ) : (
+                      <div className="flex items-center">
+                        <TagIcon className="h-4 w-4 text-gray-400 mr-2" />
+                        <span className="text-gray-900">{person.position}</span>
+                      </div>
+                    )}
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Base
+                    </label>
+                    {isEditing ? (
+                      <select
+                        value={formData.base || ''}
+                        onChange={(e) => setFormData({...formData, base: e.target.value})}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                      >
+                        <option value="">Selecione uma base</option>
+                        <option value="Porto Alegre">Porto Alegre</option>
+                        <option value="São Paulo">São Paulo</option>
+                        <option value="Mendonça">Mendonça</option>
+                      </select>
+                    ) : (
+                      <div className="flex items-center">
+                        <BuildingOfficeIcon className="h-4 w-4 text-gray-400 mr-2" />
+                        <span className="text-gray-900">{person.base}</span>
+                      </div>
+                    )}
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Calendário
+                    </label>
+                    {isEditing ? (
+                      <select
+                        value={formData.calendar || ''}
+                        onChange={(e) => setFormData({...formData, calendar: e.target.value})}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                      >
+                        <option value="">Selecione um calendário</option>
+                        <option value="Padrão Porto Alegre">Padrão Porto Alegre</option>
+                        <option value="Padrão São Paulo">Padrão São Paulo</option>
+                        <option value="Padrão Interior">Padrão Interior</option>
+                        <option value="Calendário Flexível">Calendário Flexível</option>
+                      </select>
+                    ) : (
+                      <div className="flex items-center">
+                        <CalendarIcon className="h-4 w-4 text-gray-400 mr-2" />
+                        <span className="text-gray-900">{person.calendar}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Observações */}
+                <div className="mt-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Observações
+                  </label>
+                  {isEditing ? (
+                    <textarea
+                      value={formData.notes || ''}
+                      onChange={(e) => setFormData({...formData, notes: e.target.value})}
+                      rows={3}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                      placeholder="Informações adicionais sobre a pessoa..."
+                    />
+                  ) : (
+                    <div className="flex items-start">
+                      <DocumentTextIcon className="h-4 w-4 text-gray-400 mr-2 mt-0.5" />
+                      <span className="text-gray-900">{person.notes || 'Nenhuma observação'}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Histórico de Contratos */}
+            <div className="bg-white shadow-sm rounded-lg border border-gray-200">
+              <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+                <h3 className="text-lg font-semibold text-gray-900">Histórico de Contratos</h3>
+                <button
+                  onClick={() => setIsAddingContract(true)}
+                  className="inline-flex items-center px-3 py-1.5 border border-transparent text-sm font-medium rounded-md text-blue-700 bg-blue-100 hover:bg-blue-200 transition-colors"
+                  aria-label="Adicionar novo contrato"
+                >
+                  <PlusIcon className="h-4 w-4 mr-1" />
+                  Adicionar
+                </button>
+              </div>
+              <div className="overflow-hidden">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Período
+                      </th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Valor
+                      </th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Tipo
+                      </th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Motivo
+                      </th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Status
+                      </th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Ações
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {person.rateHistory?.map((record, index) => (
+                      <tr key={index} className="hover:bg-gray-50">
+                        <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
+                          {new Date(record.startDate).toLocaleDateString('pt-BR')} - {record.endDate ? new Date(record.endDate).toLocaleDateString('pt-BR') : 'Atual'}
+                        </td>
+                        <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">
+                          R$ {record.value}
+                        </td>
+                        <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
+                          {getContractTypeLabel(record.contractType)}
+                        </td>
+                        <td className="px-4 py-3 text-sm text-gray-900 max-w-xs truncate" title={record.reason}>
+                          {record.reason}
+                        </td>
+                        <td className="px-4 py-3 whitespace-nowrap">
+                          {!record.endDate ? (
+                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                              Ativo
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                              Inativo
+                            </span>
+                          )}
+                        </td>
+                        <td className="px-4 py-3 whitespace-nowrap text-sm">
+                          {!record.endDate && (
+                            <button
+                              onClick={() => handleEndContract(record.id)}
+                              className="inline-flex items-center px-2 py-1 border border-transparent text-xs font-medium rounded text-red-700 bg-red-100 hover:bg-red-200 transition-colors"
+                              title="Encerrar contrato"
+                              aria-label="Encerrar contrato ativo"
+                            >
+                              <XMarkIcon className="h-3 w-3 mr-1" />
+                              Encerrar
+                            </button>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                </div>
+                
+                {/* Formulário para adicionar novo contrato */}
+                {isAddingContract ? (
+                  <div className="border-t border-gray-200 pt-4">
+                    <h4 className="text-sm font-medium text-gray-900 mb-4">Adicionar Novo Contrato</h4>
+                    <div className="grid grid-cols-5 gap-4">
+                      <div>
+                        <label className="block text-xs font-medium text-gray-700 mb-1">
+                          Valor (R$) *
+                        </label>
+                        <input
+                          type="number"
+                          step="0.01"
+                          value={newContract.value}
+                          onChange={(e) => setNewContract({...newContract, value: e.target.value})}
+                          className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500"
+                          placeholder="150.00"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-gray-700 mb-1">
+                          Tipo de Contrato *
+                        </label>
+                        <select
+                          value={newContract.contractType}
+                          onChange={(e) => setNewContract({...newContract, contractType: e.target.value})}
+                          className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500"
+                        >
+                          <option value="">Selecione</option>
+                          {contractTypes.map(type => (
+                            <option key={type.value} value={type.value}>{type.label}</option>
+                          ))}
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-gray-700 mb-1">
+                          Início *
+                        </label>
+                        <input
+                          type="date"
+                          value={newContract.startDate}
+                          onChange={(e) => setNewContract({...newContract, startDate: e.target.value})}
+                          className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-gray-700 mb-1">
+                          Fim
+                        </label>
+                        <input
+                          type="date"
+                          value={newContract.endDate}
+                          onChange={(e) => setNewContract({...newContract, endDate: e.target.value})}
+                          className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-gray-700 mb-1">
+                          Motivo *
+                        </label>
+                        <input
+                          type="text"
+                          value={newContract.reason}
+                          onChange={(e) => setNewContract({...newContract, reason: e.target.value})}
+                          className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500"
+                          placeholder="Ex: Aumento por..."
+                        />
+                      </div>
+                    </div>
+                    <div className="flex justify-end space-x-2 mt-4">
+                      <button
+                        onClick={handleCancelAddContract}
+                        className="px-3 py-1 text-sm border border-gray-300 rounded text-gray-700 hover:bg-gray-50"
+                      >
+                        Cancelar
+                      </button>
+                      <button
+                        onClick={handleAddContract}
+                        className="px-3 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700"
+                      >
+                        + Adicionar
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="border-t border-gray-200 pt-4">
+                    <button
+                      onClick={() => setIsAddingContract(true)}
+                      className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-blue-700 bg-blue-100 hover:bg-blue-200"
+                    >
+                      <PlusIcon className="h-4 w-4 mr-1" />
+                      Adicionar Contrato
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Histórico de Níveis */}
+            <div className="mt-8 bg-white shadow rounded-lg">
+              <div className="px-6 py-4 border-b border-gray-200">
+                <h3 className="text-lg font-medium text-gray-900">Histórico de Níveis</h3>
+              </div>
+              <div className="p-6">
+                <div className="overflow-x-auto">
+                  <table className="min-w-full divide-y divide-gray-200">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Período
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Nível
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Motivo
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Status
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Ações
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                      {person.levelHistory?.map((record, index) => (
+                        <tr key={index}>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {new Date(record.startDate).toLocaleDateString('pt-BR')} - {record.endDate ? new Date(record.endDate).toLocaleDateString('pt-BR') : 'Atual'}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {record.value}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {record.reason}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            {!record.endDate ? (
+                              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                Ativo
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                                Inativo
+                              </span>
+                            )}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {!record.endDate && (
+                              <button
+                                onClick={() => handleEndLevel(record.id)}
+                                className="inline-flex items-center px-2.5 py-1.5 border border-transparent text-xs font-medium rounded text-red-700 bg-red-100 hover:bg-red-200"
+                              >
+                                Encerrar
+                              </button>
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                
+                {/* Formulário para adicionar novo nível */}
+                {isAddingLevel ? (
+                  <div className="border-t border-gray-200 pt-4">
+                    <h4 className="text-sm font-medium text-gray-900 mb-4">Adicionar Novo Nível</h4>
+                    <div className="grid grid-cols-4 gap-4">
+                      <div>
+                        <label className="block text-xs font-medium text-gray-700 mb-1">
+                          Nível *
+                        </label>
+                        <select
+                          value={newLevel.value}
+                          onChange={(e) => setNewLevel({...newLevel, value: e.target.value})}
+                          className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500"
+                        >
+                          <option value="">Selecione</option>
+                          {levels.map(level => (
+                            <option key={level} value={level}>{level}</option>
+                          ))}
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-gray-700 mb-1">
+                          Início *
+                        </label>
+                        <input
+                          type="date"
+                          value={newLevel.startDate}
+                          onChange={(e) => setNewLevel({...newLevel, startDate: e.target.value})}
+                          className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-gray-700 mb-1">
+                          Fim
+                        </label>
+                        <input
+                          type="date"
+                          value={newLevel.endDate}
+                          onChange={(e) => setNewLevel({...newLevel, endDate: e.target.value})}
+                          className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-gray-700 mb-1">
+                          Motivo *
+                        </label>
+                        <input
+                          type="text"
+                          value={newLevel.reason}
+                          onChange={(e) => setNewLevel({...newLevel, reason: e.target.value})}
+                          className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500"
+                          placeholder="Ex: Promoção por..."
+                        />
+                      </div>
+                    </div>
+                    <div className="flex justify-end space-x-2 mt-4">
+                      <button
+                        onClick={handleCancelAddLevel}
+                        className="px-3 py-1 text-sm border border-gray-300 rounded text-gray-700 hover:bg-gray-50"
+                      >
+                        Cancelar
+                      </button>
+                      <button
+                        onClick={handleAddLevel}
+                        className="px-3 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700"
+                      >
+                        + Adicionar
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="border-t border-gray-200 pt-4">
+                    <button
+                      onClick={() => setIsAddingLevel(true)}
+                      className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-blue-700 bg-blue-100 hover:bg-blue-200"
+                    >
+                      <PlusIcon className="h-4 w-4 mr-1" />
+                      Adicionar Nível
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Histórico de Admissões e Encerramentos */}
+            <div className="mt-8 bg-white shadow rounded-lg">
+              <div className="px-6 py-4 border-b border-gray-200">
+                <h3 className="text-lg font-medium text-gray-900">Histórico de Admissões e Encerramentos</h3>
+              </div>
+              <div className="p-6">
+                <div className="overflow-x-auto">
+                  <table className="min-w-full divide-y divide-gray-200">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Data
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Tipo
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Motivo
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Ações
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                      {person.employmentHistory?.map((record, index) => (
+                        <tr key={index}>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {new Date(record.date).toLocaleDateString('pt-BR')}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                              record.type === 'admission' ? 'bg-green-100 text-green-800' :
+                              record.type === 'dismissal' ? 'bg-red-100 text-red-800' :
+                              record.type === 'transfer' ? 'bg-blue-100 text-blue-800' :
+                              record.type === 'promotion' ? 'bg-purple-100 text-purple-800' :
+                              'bg-gray-100 text-gray-800'
+                            }`}>
+                              {getEmploymentTypeLabel(record.type)}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {record.reason}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {record.type === 'admission' && !record.endDate && (
+                              <button
+                                onClick={() => handleEndEmployment(record.id)}
+                                className="inline-flex items-center px-2.5 py-1.5 border border-transparent text-xs font-medium rounded text-red-700 bg-red-100 hover:bg-red-200"
+                              >
+                                Encerrar
+                              </button>
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                
+                {/* Formulário para adicionar novo registro de admissão/encerramento */}
+                {isAddingEmployment ? (
+                  <div className="border-t border-gray-200 pt-4">
+                    <h4 className="text-sm font-medium text-gray-900 mb-4">Adicionar Novo Registro</h4>
+                    <div className="grid grid-cols-3 gap-4">
+                      <div>
+                        <label className="block text-xs font-medium text-gray-700 mb-1">
+                          Tipo *
+                        </label>
+                        <select
+                          value={newEmployment.type}
+                          onChange={(e) => setNewEmployment({...newEmployment, type: e.target.value})}
+                          className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500"
+                        >
+                          <option value="">Selecione</option>
+                          {employmentTypes.map(type => (
+                            <option key={type.value} value={type.value}>{type.label}</option>
+                          ))}
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-gray-700 mb-1">
+                          Data *
+                        </label>
+                        <input
+                          type="date"
+                          value={newEmployment.date}
+                          onChange={(e) => setNewEmployment({...newEmployment, date: e.target.value})}
+                          className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-gray-700 mb-1">
+                          Motivo *
+                        </label>
+                        <input
+                          type="text"
+                          value={newEmployment.reason}
+                          onChange={(e) => setNewEmployment({...newEmployment, reason: e.target.value})}
+                          className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500"
+                          placeholder="Ex: Contratação inicial..."
+                        />
+                      </div>
+                    </div>
+                    <div className="flex justify-end space-x-2 mt-4">
+                      <button
+                        onClick={handleCancelAddEmployment}
+                        className="px-3 py-1 text-sm border border-gray-300 rounded text-gray-700 hover:bg-gray-50"
+                      >
+                        Cancelar
+                      </button>
+                      <button
+                        onClick={handleAddEmployment}
+                        className="px-3 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700"
+                      >
+                        + Adicionar
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="border-t border-gray-200 pt-4">
+                    <button
+                      onClick={() => setIsAddingEmployment(true)}
+                      className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-blue-700 bg-blue-100 hover:bg-blue-200"
+                    >
+                      <PlusIcon className="h-4 w-4 mr-1" />
+                      Adicionar Registro
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+          
+          {/* Coluna Direita (40%) - Skills + Status */}
+          <div className="lg:col-span-2 space-y-6">
+            
+            {/* Skills como Tags */}
+            <div className="bg-white shadow-sm rounded-lg border border-gray-200">
+              <div className="px-6 py-4 border-b border-gray-200">
+                <h2 className="text-lg font-semibold text-gray-900" id="skills-section">Skills</h2>
+              </div>
+              <div className="p-6">
+                <div className="flex flex-wrap gap-2" role="list" aria-labelledby="skills-section">
+                  {person.skills?.slice(0, 6).map((skill, index) => (
+                    <span
+                      key={index}
+                      role="listitem"
+                      className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800 hover:bg-blue-200 cursor-pointer transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                      title={`Skill: ${skill}`}
+                      tabIndex="0"
+                      aria-label={`Skill ${skill}`}
+                    >
+                      {skill}
+                    </span>
+                  ))}
+                  {person.skills?.length > 6 && (
+                    <button 
+                      className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-gray-100 text-gray-700 hover:bg-gray-200 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
+                      aria-label={`Ver mais ${person.skills.length - 6} skills`}
+                    >
+                      +{person.skills.length - 6} mais
+                    </button>
+                  )}
+                </div>
+                {isEditing && (
+                  <div className="mt-4">
+                    <button 
+                      className="inline-flex items-center px-3 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors"
+                      aria-label="Adicionar nova skill"
+                    >
+                      <PlusIcon className="h-4 w-4 mr-1" aria-hidden="true" />
+                      Adicionar Skill
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Informações Profissionais Calculadas */}
+            <div className="bg-white shadow-sm rounded-lg border border-gray-200">
+              <div className="px-6 py-4 border-b border-gray-200">
+                <h2 className="text-lg font-semibold text-gray-900">Informações Profissionais</h2>
+              </div>
+              <div className="p-6 space-y-4">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium text-gray-700">Nível Atual</span>
+                  <div className="flex items-center">
+                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+                      {getActiveValue(person.levelHistory)}
+                    </span>
+                    <LightBulbIcon className="h-4 w-4 text-gray-400 ml-2" title="Campo calculado automaticamente" />
+                  </div>
+                </div>
+                
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium text-gray-700">Taxa/Hora Atual</span>
+                  <div className="flex items-center">
+                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                      R$ {getActiveValue(person.rateHistory)}
+                    </span>
+                    <LightBulbIcon className="h-4 w-4 text-gray-400 ml-2" title="Campo calculado automaticamente" />
+                  </div>
+                </div>
+                
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium text-gray-700">Tipo de Contrato</span>
+                  <div className="flex items-center">
+                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800">
+                      {getContractTypeLabel(getActiveContractType(person))}
+                    </span>
+                    <LightBulbIcon className="h-4 w-4 text-gray-400 ml-2" title="Campo calculado automaticamente" />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Modais de Encerramento */}
+
+      {/* Modal de Encerramento de Contrato */}
+      {isEndingContract && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+          <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+            <div className="mt-3">
+              <h3 className="text-lg font-medium text-gray-900 mb-4">Encerrar Contrato</h3>
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Data de Encerramento *
+                </label>
+                <input
+                  type="date"
+                  value={endDate}
+                  onChange={(e) => setEndDate(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              <div className="flex justify-end space-x-3">
+                <button
+                  onClick={handleCancelEnd}
+                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 border border-gray-300 rounded-md hover:bg-gray-200"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={handleConfirmEndContract}
+                  className="px-4 py-2 text-sm font-medium text-white bg-red-600 border border-transparent rounded-md hover:bg-red-700"
+                >
+                  Encerrar
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Encerramento de Nível */}
+      {isEndingLevel && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+          <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+            <div className="mt-3">
+              <h3 className="text-lg font-medium text-gray-900 mb-4">Encerrar Nível</h3>
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Data de Encerramento *
+                </label>
+                <input
+                  type="date"
+                  value={endDate}
+                  onChange={(e) => setEndDate(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              <div className="flex justify-end space-x-3">
+                <button
+                  onClick={handleCancelEnd}
+                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 border border-gray-300 rounded-md hover:bg-gray-200"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={handleConfirmEndLevel}
+                  className="px-4 py-2 text-sm font-medium text-white bg-red-600 border border-transparent rounded-md hover:bg-red-700"
+                >
+                  Encerrar
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Encerramento de Admissão */}
+      {isEndingEmployment && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+          <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+            <div className="mt-3">
+              <h3 className="text-lg font-medium text-gray-900 mb-4">Encerrar Admissão</h3>
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Data de Encerramento *
+                </label>
+                <input
+                  type="date"
+                  value={endDate}
+                  onChange={(e) => setEndDate(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              <div className="flex justify-end space-x-3">
+                <button
+                  onClick={handleCancelEnd}
+                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 border border-gray-300 rounded-md hover:bg-gray-200"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={handleConfirmEndEmployment}
+                  className="px-4 py-2 text-sm font-medium text-white bg-red-600 border border-transparent rounded-md hover:bg-red-700"
+                >
+                  Encerrar
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+    </>
+  );
+};
+
+export default PersonDetail;
+
