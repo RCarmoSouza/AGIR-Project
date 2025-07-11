@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { 
   PlusIcon, 
   MagnifyingGlassIcon,
@@ -14,6 +15,7 @@ import {
 } from '@heroicons/react/24/outline';
 
 const PeopleManagement = () => {
+  const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [editingPerson, setEditingPerson] = useState(null);
@@ -33,6 +35,7 @@ const PeopleManagement = () => {
     position: '',
     level: 'junior',
     specialization: '',
+    contractType: '', // Novo campo para tipo de contrato
     base: '',
     calendar: '',
     skills: [],
@@ -49,7 +52,7 @@ const PeopleManagement = () => {
   });
 
   // Estados para campos inline de histórico
-  const [newRateEntry, setNewRateEntry] = useState({ value: '', startDate: '', endDate: '', reason: '' });
+  const [newRateEntry, setNewRateEntry] = useState({ value: '', startDate: '', endDate: '', reason: '', contractType: '' });
   const [newLevelEntry, setNewLevelEntry] = useState({ value: '', startDate: '', endDate: '', reason: '' });
   const [rateMessage, setRateMessage] = useState(null);
   const [levelMessage, setLevelMessage] = useState(null);
@@ -81,14 +84,16 @@ const PeopleManagement = () => {
           value: 130, 
           startDate: '2023-01-15', 
           endDate: '2023-06-30',
-          reason: 'Admissão' 
+          reason: 'Admissão',
+          contractType: 'efetivo'
         },
         { 
           id: 2,
           value: 150, 
           startDate: '2023-07-01', 
           endDate: null,
-          reason: 'Aumento por performance' 
+          reason: 'Aumento por performance',
+          contractType: 'efetivo'
         }
       ],
       levelHistory: [
@@ -136,14 +141,16 @@ const PeopleManagement = () => {
           value: 100, 
           startDate: '2023-03-20', 
           endDate: '2023-08-31',
-          reason: 'Admissão' 
+          reason: 'Admissão',
+          contractType: 'efetivo'
         },
         { 
           id: 2,
           value: 120, 
           startDate: '2023-09-01', 
           endDate: null,
-          reason: 'Aumento por performance' 
+          reason: 'Aumento por performance',
+          contractType: 'efetivo'
         }
       ],
       levelHistory: [
@@ -191,14 +198,16 @@ const PeopleManagement = () => {
           value: 90, 
           startDate: '2023-02-10', 
           endDate: '2023-08-14',
-          reason: 'Admissão' 
+          reason: 'Admissão',
+          contractType: 'meio_turno'
         },
         { 
           id: 2,
           value: 110, 
           startDate: '2023-08-15', 
           endDate: null,
-          reason: 'Aumento por performance' 
+          reason: 'Aumento por performance',
+          contractType: 'efetivo'
         }
       ],
       levelHistory: [
@@ -246,7 +255,8 @@ const PeopleManagement = () => {
           value: 80, 
           startDate: '2024-01-08', 
           endDate: null,
-          reason: 'Admissão' 
+          reason: 'Admissão',
+          contractType: 'estagio'
         }
       ],
       levelHistory: [
@@ -287,14 +297,16 @@ const PeopleManagement = () => {
           value: 85, 
           startDate: '2023-05-15', 
           endDate: '2023-10-31',
-          reason: 'Admissão' 
+          reason: 'Admissão',
+          contractType: 'efetivo'
         },
         { 
           id: 2,
           value: 100, 
           startDate: '2023-11-01', 
           endDate: null,
-          reason: 'Aumento por performance' 
+          reason: 'Aumento por performance',
+          contractType: 'horista'
         }
       ],
       levelHistory: [
@@ -323,6 +335,15 @@ const PeopleManagement = () => {
   // Dados auxiliares
   const bases = ['Porto Alegre', 'São Paulo', 'Mendonça'];
   const calendars = ['Padrão Porto Alegre', 'Padrão São Paulo', 'Padrão Interior', 'Calendário Flexível'];
+  
+  // Tipos de contrato com horas diárias
+  const contractTypes = [
+    { value: 'efetivo', label: 'Efetivo', dailyHours: 8 },
+    { value: 'estagio', label: 'Estágio', dailyHours: 6 },
+    { value: 'meio_turno', label: 'Meio Turno', dailyHours: 4 },
+    { value: 'horista', label: 'Horista', dailyHours: 0 }
+  ];
+  
   const specializations = [
     'Full Stack',
     'Front-End',
@@ -380,6 +401,29 @@ const PeopleManagement = () => {
 
   const getActiveLevel = (person) => {
     return getActiveValue(person.levelHistory);
+  };
+
+  const getActiveContractType = (person) => {
+    if (!person.rateHistory || person.rateHistory.length === 0) return null;
+    
+    // Busca o registro ativo (sem endDate ou com endDate futura)
+    const today = new Date().toISOString().split('T')[0];
+    const activeRecord = person.rateHistory.find(record => 
+      !record.endDate || record.endDate > today
+    );
+    
+    if (activeRecord) return activeRecord.contractType;
+    
+    // Se não há registro ativo, pega o mais recente
+    const sortedHistory = [...person.rateHistory].sort((a, b) => 
+      new Date(b.startDate) - new Date(a.startDate)
+    );
+    return sortedHistory[0]?.contractType || null;
+  };
+
+  const getContractTypeLabel = (contractType) => {
+    const contract = contractTypes.find(c => c.value === contractType);
+    return contract ? contract.label : contractType;
   };
 
   // Função para validar se uma nova entrada no histórico é válida
@@ -447,6 +491,7 @@ const PeopleManagement = () => {
       position: '',
       level: 'junior',
       specialization: '',
+      contractType: '', // Incluindo campo de tipo de contrato
       base: '',
       calendar: '',
       skills: [],
@@ -479,13 +524,14 @@ const PeopleManagement = () => {
       const initialLevelHistory = [];
       
       // Criar registro inicial de taxa se informado
-      if (formData.hourlyRate && formData.hourlyRate > 0) {
+      if (formData.hourlyRate && formData.hourlyRate > 0 && formData.contractType) {
         initialRateHistory.push({
           id: 1,
           value: formData.hourlyRate,
           startDate: formData.admissionDate,
           endDate: null, // Registro ativo
-          reason: 'Admissão'
+          reason: 'Admissão',
+          contractType: formData.contractType
         });
       }
       
@@ -550,6 +596,10 @@ const PeopleManagement = () => {
       employmentHistory: person.employmentHistory || []
     });
     setShowModal(true);
+  };
+
+  const handleView = (person) => {
+    navigate(`/people/people/${person.id}`);
   };
 
   const handleDelete = (id) => {
@@ -817,7 +867,7 @@ const PeopleManagement = () => {
                     Skills
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Taxa/Hora
+                    Taxa/Hora & Contrato
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Status
@@ -867,12 +917,16 @@ const PeopleManagement = () => {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm text-gray-900">R$ {person.hourlyRate}</div>
+                      <div className="text-sm text-gray-500">
+                        {getContractTypeLabel(getActiveContractType(person)) || 'Não definido'}
+                      </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       {getStatusBadge(person.status)}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                       <button
+                        onClick={() => handleView(person)}
                         className="text-blue-600 hover:text-blue-900 mr-3"
                         title="Visualizar pessoa"
                       >
@@ -1075,6 +1129,27 @@ const PeopleManagement = () => {
                         </select>
                       </div>
 
+                      {/* Campo Tipo de Contrato - apenas para criação de novas pessoas */}
+                      {!editingPerson && (
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Tipo de Contrato *
+                          </label>
+                          <select
+                            required
+                            value={formData.contractType || ''}
+                            onChange={(e) => setFormData({...formData, contractType: e.target.value})}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                          >
+                            <option value="">Selecione</option>
+                            <option value="efetivo">Efetivo (8h/dia)</option>
+                            <option value="estagio">Estágio (6h/dia)</option>
+                            <option value="meio_turno">Meio Turno (4h/dia)</option>
+                            <option value="horista">Horista (0h/dia)</option>
+                          </select>
+                        </div>
+                      )}
+
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">
                           Nível *
@@ -1204,14 +1279,14 @@ const PeopleManagement = () => {
                       <div className="space-y-6 pt-6 border-t border-gray-200">
                         <h3 className="text-lg font-medium text-gray-900">Históricos</h3>
                         
-                        {/* Histórico de Taxas */}
+                        {/* Histórico de Contratos */}
                         <div className="bg-gray-50 p-4 rounded-lg">
                           <div className="mb-4">
-                            <h4 className="text-md font-medium text-gray-800 mb-3">Histórico de Taxas</h4>
+                            <h4 className="text-md font-medium text-gray-800 mb-3">Histórico de Contratos</h4>
                             
                             {/* Campos inline para adicionar novo registro */}
                             <div className="bg-white p-3 rounded border border-gray-200 mb-3">
-                              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 items-end">
+                              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3 items-end">
                                 <div className="sm:col-span-1">
                                   <label className="block text-xs font-medium text-gray-700 mb-1" htmlFor="rate-value">
                                     Valor (R$) *
@@ -1228,6 +1303,26 @@ const PeopleManagement = () => {
                                     aria-describedby="rate-value-help"
                                   />
                                   <div id="rate-value-help" className="sr-only">Digite o valor da taxa por hora em reais</div>
+                                </div>
+                                <div className="sm:col-span-1">
+                                  <label className="block text-xs font-medium text-gray-700 mb-1" htmlFor="rate-contract-type">
+                                    Tipo de Contrato *
+                                  </label>
+                                  <select
+                                    id="rate-contract-type"
+                                    value={newRateEntry.contractType || ''}
+                                    onChange={(e) => setNewRateEntry({...newRateEntry, contractType: e.target.value})}
+                                    className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500"
+                                    aria-describedby="rate-contract-type-help"
+                                  >
+                                    <option value="">Selecione</option>
+                                    {contractTypes.map(type => (
+                                      <option key={type.value} value={type.value}>
+                                        {type.label} ({type.dailyHours}h/dia)
+                                      </option>
+                                    ))}
+                                  </select>
+                                  <div id="rate-contract-type-help" className="sr-only">Selecione o tipo de contrato</div>
                                 </div>
                                 <div className="sm:col-span-1">
                                   <label className="block text-xs font-medium text-gray-700 mb-1" htmlFor="rate-start">
@@ -1276,8 +1371,8 @@ const PeopleManagement = () => {
                                   <button
                                     type="button"
                                     onClick={() => {
-                                      if (!newRateEntry.value || !newRateEntry.startDate || !newRateEntry.reason) {
-                                        setRateMessage({ type: 'error', text: 'Valor, Data de Início e Motivo são obrigatórios' });
+                                      if (!newRateEntry.value || !newRateEntry.startDate || !newRateEntry.reason || !newRateEntry.contractType) {
+                                        setRateMessage({ type: 'error', text: 'Valor, Tipo de Contrato, Data de Início e Motivo são obrigatórios' });
                                         return;
                                       }
                                       
@@ -1286,7 +1381,8 @@ const PeopleManagement = () => {
                                         value: parseFloat(newRateEntry.value),
                                         startDate: newRateEntry.startDate,
                                         endDate: newRateEntry.endDate || null,
-                                        reason: newRateEntry.reason
+                                        reason: newRateEntry.reason,
+                                        contractType: newRateEntry.contractType
                                       };
                                       
                                       // Validar entrada
@@ -1302,7 +1398,7 @@ const PeopleManagement = () => {
                                       });
                                       
                                       // Limpar campos
-                                      setNewRateEntry({ value: '', startDate: '', endDate: '', reason: '' });
+                                      setNewRateEntry({ value: '', startDate: '', endDate: '', reason: '', contractType: '' });
                                       setRateMessage({ type: 'success', text: 'Registro adicionado com sucesso!' });
                                       
                                       // Limpar mensagem após 3 segundos
@@ -1331,8 +1427,9 @@ const PeopleManagement = () => {
                           
                           {formData.rateHistory && formData.rateHistory.length > 0 ? (
                             <div className="space-y-2">
-                              <div className="grid grid-cols-5 gap-2 text-xs font-medium text-gray-600 border-b pb-2">
+                              <div className="grid grid-cols-6 gap-2 text-xs font-medium text-gray-600 border-b pb-2">
                                 <div>Valor</div>
+                                <div>Tipo Contrato</div>
                                 <div>Data Início</div>
                                 <div>Data Fim</div>
                                 <div>Motivo</div>
@@ -1341,12 +1438,15 @@ const PeopleManagement = () => {
                               {formData.rateHistory
                                 .sort((a, b) => new Date(b.startDate) - new Date(a.startDate))
                                 .map((entry, index) => (
-                                <div key={entry.id || index} className="grid grid-cols-5 gap-2 items-center bg-white p-3 rounded border">
+                                <div key={entry.id || index} className="grid grid-cols-6 gap-2 items-center bg-white p-3 rounded border">
                                   <div className="text-sm font-medium">
                                     R$ {entry.value}
                                     {!entry.endDate && (
                                       <span className="ml-1 text-xs bg-green-100 text-green-800 px-1 rounded">ATIVO</span>
                                     )}
+                                  </div>
+                                  <div className="text-sm text-gray-600">
+                                    {getContractTypeLabel(entry.contractType) || 'Não definido'}
                                   </div>
                                   <div className="text-sm text-gray-600">
                                     {new Date(entry.startDate).toLocaleDateString('pt-BR')}

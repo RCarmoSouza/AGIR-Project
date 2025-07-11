@@ -35,6 +35,11 @@ const ProjectGantt = () => {
   const [collapsedTasks, setCollapsedTasks] = useState(new Set());
   const [newTaskTitle, setNewTaskTitle] = useState('');
   const [showNewTaskInput, setShowNewTaskInput] = useState(false);
+  
+  // Estados para edição inline
+  const [editingCell, setEditingCell] = useState(null);
+  const [editingValue, setEditingValue] = useState('');
+  
   const [visibleColumns, setVisibleColumns] = useState({
     tipo: true,
     status: true,
@@ -137,6 +142,95 @@ const ProjectGantt = () => {
   };
 
   const timeline = generateTimeline();
+
+  // Funções para edição inline
+  const startEditing = (taskId, field, currentValue) => {
+    setEditingCell(`${taskId}-${field}`);
+    setEditingValue(currentValue || '');
+  };
+
+  const saveEdit = (taskId, field) => {
+    if (editingCell === `${taskId}-${field}`) {
+      updateTask(taskId, { [field]: editingValue });
+      setEditingCell(null);
+      setEditingValue('');
+    }
+  };
+
+  const cancelEdit = () => {
+    setEditingCell(null);
+    setEditingValue('');
+  };
+
+  const handleKeyDown = (e, taskId, field) => {
+    if (e.key === 'Enter' || e.key === 'Tab') {
+      e.preventDefault();
+      saveEdit(taskId, field);
+    } else if (e.key === 'Escape') {
+      e.preventDefault();
+      cancelEdit();
+    }
+  };
+
+  // Componente para célula editável
+  const EditableCell = ({ taskId, field, value, type = 'text', options = null, children }) => {
+    const cellKey = `${taskId}-${field}`;
+    const isEditing = editingCell === cellKey;
+
+    if (isEditing) {
+      if (type === 'select' && options) {
+        return (
+          <select
+            value={editingValue}
+            onChange={(e) => setEditingValue(e.target.value)}
+            onBlur={() => saveEdit(taskId, field)}
+            onKeyDown={(e) => handleKeyDown(e, taskId, field)}
+            className="w-full px-2 py-1 text-xs border border-blue-500 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+            autoFocus
+          >
+            {options.map(option => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+        );
+      } else if (type === 'date') {
+        return (
+          <input
+            type="date"
+            value={editingValue}
+            onChange={(e) => setEditingValue(e.target.value)}
+            onBlur={() => saveEdit(taskId, field)}
+            onKeyDown={(e) => handleKeyDown(e, taskId, field)}
+            className="w-full px-2 py-1 text-xs border border-blue-500 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+            autoFocus
+          />
+        );
+      } else {
+        return (
+          <input
+            type={type}
+            value={editingValue}
+            onChange={(e) => setEditingValue(e.target.value)}
+            onBlur={() => saveEdit(taskId, field)}
+            onKeyDown={(e) => handleKeyDown(e, taskId, field)}
+            className="w-full px-2 py-1 text-xs border border-blue-500 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+            autoFocus
+          />
+        );
+      }
+    }
+
+    return (
+      <div
+        onClick={() => startEditing(taskId, field, value)}
+        className="cursor-pointer hover:bg-gray-100 p-1 rounded min-h-6"
+      >
+        {children}
+      </div>
+    );
+  };
 
   // Filtrar tarefas
   const filteredTasks = projectTasks.filter(task => {
@@ -521,124 +615,213 @@ const ProjectGantt = () => {
                         <tr key={task.id} className="hover:bg-gray-50" style={{ height: '80px' }}>
                           {visibleColumns.tipo && (
                             <td className="px-2 py-3 whitespace-nowrap text-center align-middle" style={{ height: '60px' }}>
-                              <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                                task.type === 'Epic' ? 'bg-purple-100 text-purple-800' :
-                                task.type === 'Story' ? 'bg-blue-100 text-blue-800' :
-                                task.type === 'Task' ? 'bg-green-100 text-green-800' :
-                                task.type === 'Bug' ? 'bg-red-100 text-red-800' :
-                                'bg-gray-100 text-gray-800'
-                              }`}>
-                                {task.type || 'Task'}
-                              </span>
+                              <EditableCell
+                                taskId={task.id}
+                                field="type"
+                                value={task.type}
+                                type="select"
+                                options={[
+                                  { value: 'Epic', label: 'Epic' },
+                                  { value: 'Story', label: 'Story' },
+                                  { value: 'Task', label: 'Task' },
+                                  { value: 'Bug', label: 'Bug' }
+                                ]}
+                              >
+                                <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                                  task.type === 'Epic' ? 'bg-purple-100 text-purple-800' :
+                                  task.type === 'Story' ? 'bg-blue-100 text-blue-800' :
+                                  task.type === 'Task' ? 'bg-green-100 text-green-800' :
+                                  task.type === 'Bug' ? 'bg-red-100 text-red-800' :
+                                  'bg-gray-100 text-gray-800'
+                                }`}>
+                                  {task.type || 'Task'}
+                                </span>
+                              </EditableCell>
                             </td>
                           )}
                           {visibleColumns.status && (
                             <td className="px-2 py-3 whitespace-nowrap text-center align-middle" style={{ height: '60px' }}>
-                              <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                                task.status === 'Concluído' ? 'bg-green-100 text-green-800' :
-                                task.status === 'Em Progresso' ? 'bg-yellow-100 text-yellow-800' :
-                                'bg-blue-100 text-blue-800'
-                              }`}>
-                                {task.status || 'A Fazer'}
-                              </span>
+                              <EditableCell
+                                taskId={task.id}
+                                field="status"
+                                value={task.status}
+                                type="select"
+                                options={[
+                                  { value: 'A Fazer', label: 'A Fazer' },
+                                  { value: 'Em Progresso', label: 'Em Progresso' },
+                                  { value: 'Concluído', label: 'Concluído' },
+                                  { value: 'Bloqueado', label: 'Bloqueado' }
+                                ]}
+                              >
+                                <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                                  task.status === 'Concluído' ? 'bg-green-100 text-green-800' :
+                                  task.status === 'Em Progresso' ? 'bg-yellow-100 text-yellow-800' :
+                                  'bg-blue-100 text-blue-800'
+                                }`}>
+                                  {task.status || 'A Fazer'}
+                                </span>
+                              </EditableCell>
                             </td>
                           )}
-                          {visibleColumns.responsavel && (
+                           {visibleColumns.responsavel && (
                             <td className="px-2 py-3 whitespace-nowrap text-center align-middle" style={{ height: '60px' }}>
-                              {task.assignee ? (
-                                <div className="flex items-center justify-center">
-                                  <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center text-white text-xs mr-2">
-                                    {typeof task.assignee === 'string' ? task.assignee.charAt(0).toUpperCase() : 
-                                     task.assignee.name ? task.assignee.name.charAt(0).toUpperCase() : 'U'}
+                              <EditableCell
+                                taskId={task.id}
+                                field="assignee"
+                                value={typeof task.assignee === 'string' ? task.assignee : task.assignee?.name || ''}
+                                type="text"
+                              >
+                                {task.assignee ? (
+                                  <div className="flex items-center justify-center">
+                                    <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center text-white text-xs mr-2">
+                                      {typeof task.assignee === 'string' ? task.assignee.charAt(0).toUpperCase() : 
+                                       task.assignee.name ? task.assignee.name.charAt(0).toUpperCase() : 'U'}
+                                    </div>
+                                    <span className="text-sm truncate max-w-20">
+                                      {typeof task.assignee === 'string' ? task.assignee : task.assignee.name || 'Usuário'}
+                                    </span>
                                   </div>
-                                  <span className="text-sm truncate max-w-20">
-                                    {typeof task.assignee === 'string' ? task.assignee : task.assignee.name || 'Usuário'}
-                                  </span>
-                                </div>
-                              ) : (
-                                <span className="text-gray-400 text-sm">-</span>
-                              )}
+                                ) : (
+                                  <span className="text-gray-400 text-sm">-</span>
+                                )}
+                              </EditableCell>
                             </td>
                           )}
                           {visibleColumns.dataInicio && (
                             <td className="px-2 py-3 whitespace-nowrap text-center align-middle" style={{ height: '60px' }}>
-                              <span className="text-sm">
-                                {task.startDate ? new Date(task.startDate).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }) : '-'}
-                              </span>
+                              <EditableCell
+                                taskId={task.id}
+                                field="startDate"
+                                value={task.startDate ? new Date(task.startDate).toISOString().split('T')[0] : ''}
+                                type="date"
+                              >
+                                <span className="text-sm">
+                                  {task.startDate ? new Date(task.startDate).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }) : '-'}
+                                </span>
+                              </EditableCell>
                             </td>
                           )}
                           {visibleColumns.dataFim && (
                             <td className="px-2 py-3 whitespace-nowrap text-center align-middle" style={{ height: '60px' }}>
-                              <span className="text-sm">
-                                {task.endDate ? new Date(task.endDate).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }) : '-'}
-                              </span>
+                              <EditableCell
+                                taskId={task.id}
+                                field="endDate"
+                                value={task.endDate ? new Date(task.endDate).toISOString().split('T')[0] : ''}
+                                type="date"
+                              >
+                                <span className="text-sm">
+                                  {task.endDate ? new Date(task.endDate).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }) : '-'}
+                                </span>
+                              </EditableCell>
                             </td>
                           )}
                           {visibleColumns.duracao && (
                             <td className="px-2 py-3 whitespace-nowrap text-center align-middle" style={{ height: '60px' }}>
-                              <span className="text-sm font-medium">
-                                {task.duration ? `${task.duration}d` : '-'}
-                              </span>
+                              <EditableCell
+                                taskId={task.id}
+                                field="duration"
+                                value={task.duration || ''}
+                                type="number"
+                              >
+                                <span className="text-sm font-medium">
+                                  {task.duration ? `${task.duration}d` : '-'}
+                                </span>
+                              </EditableCell>
                             </td>
                           )}
                           {visibleColumns.prioridade && (
                             <td className="px-2 py-3 whitespace-nowrap text-center align-middle" style={{ height: '60px' }}>
-                              <div className="flex items-center justify-center">
-                                {task.priority === 'Alta' ? (
-                                  <div className="flex items-center">
-                                    <svg className="w-4 h-4 text-red-500 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                                      <path fillRule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clipRule="evenodd" />
-                                    </svg>
-                                    <span className="text-sm font-medium text-red-700">Alta</span>
-                                  </div>
-                                ) : task.priority === 'Média' ? (
-                                  <div className="flex items-center">
-                                    <svg className="w-4 h-4 text-yellow-500 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                                      <path fillRule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clipRule="evenodd" />
-                                    </svg>
-                                    <span className="text-sm font-medium text-yellow-700">Média</span>
-                                  </div>
-                                ) : task.priority === 'Baixa' ? (
-                                  <div className="flex items-center">
-                                    <svg className="w-4 h-4 text-green-500 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                                      <path fillRule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clipRule="evenodd" />
-                                    </svg>
-                                    <span className="text-sm font-medium text-green-700">Baixa</span>
-                                  </div>
-                                ) : (
-                                  <span className="text-sm text-gray-500">-</span>
-                                )}
-                              </div>
+                              <EditableCell
+                                taskId={task.id}
+                                field="priority"
+                                value={task.priority}
+                                type="select"
+                                options={[
+                                  { value: 'Baixa', label: 'Baixa' },
+                                  { value: 'Média', label: 'Média' },
+                                  { value: 'Alta', label: 'Alta' },
+                                  { value: 'Crítica', label: 'Crítica' }
+                                ]}
+                              >
+                                <div className="flex items-center justify-center">
+                                  {task.priority === 'Alta' ? (
+                                    <div className="flex items-center">
+                                      <svg className="w-4 h-4 text-red-500 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fillRule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clipRule="evenodd" />
+                                      </svg>
+                                      <span className="text-sm font-medium text-red-700">Alta</span>
+                                    </div>
+                                  ) : task.priority === 'Média' ? (
+                                    <div className="flex items-center">
+                                      <svg className="w-4 h-4 text-yellow-500 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fillRule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clipRule="evenodd" />
+                                      </svg>
+                                      <span className="text-sm font-medium text-yellow-700">Média</span>
+                                    </div>
+                                  ) : task.priority === 'Baixa' ? (
+                                    <div className="flex items-center">
+                                      <svg className="w-4 h-4 text-green-500 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fillRule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clipRule="evenodd" />
+                                      </svg>
+                                      <span className="text-sm font-medium text-green-700">Baixa</span>
+                                    </div>
+                                  ) : (
+                                    <span className="text-sm text-gray-500">-</span>
+                                  )}
+                                </div>
+                              </EditableCell>
                             </td>
                           )}
                           {visibleColumns.epico && (
                             <td className="px-2 py-3 whitespace-nowrap text-center align-middle" style={{ height: '60px' }}>
-                              <span className="text-sm text-purple-600 font-medium truncate max-w-24">
-                                {task.epic || '-'}
-                              </span>
+                              <EditableCell
+                                taskId={task.id}
+                                field="epic"
+                                value={task.epic || ''}
+                                type="text"
+                              >
+                                <span className="text-sm text-purple-600 font-medium truncate max-w-24">
+                                  {task.epic || '-'}
+                                </span>
+                              </EditableCell>
                             </td>
                           )}
                           {visibleColumns.sp && (
                             <td className="px-2 py-3 whitespace-nowrap text-center align-middle" style={{ height: '60px' }}>
-                              <span className="text-sm font-mono bg-blue-50 text-blue-700 px-2 py-1 rounded">
-                                {task.storyPoints || '-'}
-                              </span>
+                              <EditableCell
+                                taskId={task.id}
+                                field="storyPoints"
+                                value={task.storyPoints || ''}
+                                type="number"
+                              >
+                                <span className="text-sm font-mono bg-blue-50 text-blue-700 px-2 py-1 rounded">
+                                  {task.storyPoints || '-'}
+                                </span>
+                              </EditableCell>
                             </td>
                           )}
                           {visibleColumns.progresso && (
                             <td className="px-2 py-3 whitespace-nowrap text-center align-middle" style={{ height: '60px' }}>
-                              <div className="flex items-center justify-center">
-                                <div className="w-16 bg-gray-200 rounded-full h-2 mr-2">
-                                  <div 
-                                    className="bg-blue-600 h-2 rounded-full" 
-                                    style={{ width: `${task.progress || 0}%` }}
-                                  ></div>
+                              <EditableCell
+                                taskId={task.id}
+                                field="progress"
+                                value={task.progress || ''}
+                                type="number"
+                              >
+                                <div className="flex items-center justify-center">
+                                  <div className="w-16 bg-gray-200 rounded-full h-2 mr-2">
+                                    <div 
+                                      className="bg-blue-600 h-2 rounded-full" 
+                                      style={{ width: `${task.progress || 0}%` }}
+                                    ></div>
+                                  </div>
+                                  <span className="text-xs font-medium text-gray-700">
+                                    {task.progress || 0}%
+                                  </span>
                                 </div>
-                                <span className="text-xs text-gray-600 min-w-[30px]">{task.progress || 0}%</span>
-                              </div>
+                              </EditableCell>
                             </td>
-                          )}
-                        </tr>
+                          )}    </tr>
                       ))}
                     </tbody>
                   </table>
