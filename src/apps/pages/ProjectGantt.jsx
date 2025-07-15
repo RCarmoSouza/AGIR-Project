@@ -2,6 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import useAppStore from '../../stores/appStore';
 import { 
+  defaultCalculationEngine, 
+  DateCalculationEngine, 
+  SCHEDULING_MODES,
+  DependencyValidator 
+} from '../../utils/dateCalculationEngine';
+import DependencyModal from '../components/DependencyModal';
+import DependencyDisplay from '../components/DependencyDisplay';
+import { 
   ArrowLeftIcon, 
   MagnifyingGlassIcon, 
   ListBulletIcon, 
@@ -45,12 +53,20 @@ const ProjectGantt = () => {
     prioridade: true,
     epico: true,
     sp: true,
-    progresso: true
+    progresso: true,
+    modoAgendamento: true,
+    dependencias: true
   });
   const [filters, setFilters] = useState({
     status: '',
     type: ''
   });
+  const [dependencyModalOpen, setDependencyModalOpen] = useState(false);
+  const [selectedTaskForDependencies, setSelectedTaskForDependencies] = useState(null);
+  
+  // Estados para edição inline
+  const [editingCell, setEditingCell] = useState(null); // { taskId, field }
+  const [editingValue, setEditingValue] = useState('');
 
   const project = projects.find(p => p.id === projectId);
   const projectTasks = tasks.filter(task => task.projectId === projectId);
@@ -138,6 +154,130 @@ const ProjectGantt = () => {
 
   const timeline = generateTimeline();
 
+  // Função para recálculo automático das tarefas
+  const recalculateProjectDates = () => {
+    try {
+      // Data de início do projeto (primeira tarefa ou data padrão)
+      const projectStartDate = project?.startDate || new Date('2024-01-01');
+      
+      // Cria uma cópia das tarefas para recálculo
+      const tasksToCalculate = [...projectTasks];
+      
+      // Executa o cálculo automático
+      const calculatedTasks = defaultCalculationEngine.scheduleProject(tasksToCalculate, projectStartDate);
+      
+      // Atualiza as tarefas no store se houve mudanças
+      calculatedTasks.forEach(calculatedTask => {
+        const originalTask = projectTasks.find(t => t.id === calculatedTask.id);
+        if (originalTask && (
+          originalTask.startDate !== calculatedTask.startDate ||
+          originalTask.endDate !== calculatedTask.endDate ||
+          originalTask.duration !== calculatedTask.duration
+        )) {
+          updateTask(calculatedTask.id, {
+            startDate: calculatedTask.startDate,
+            endDate: calculatedTask.endDate,
+            duration: calculatedTask.duration,
+            work: calculatedTask.work
+          });
+        }
+      });
+      
+      console.log('✅ Recálculo automático executado com sucesso');
+    } catch (error) {
+      console.error('❌ Erro no recálculo automático:', error);
+    }
+  };
+
+  // Função para adicionar botão de recálculo manual
+  const handleManualRecalculation = () => {
+    recalculateProjectDates();
+  };
+
+  // Funções para gerenciar dependências
+  const handleEditDependencies = (task) => {
+    setSelectedTaskForDependencies(task);
+    setDependencyModalOpen(true);
+  };
+
+  const handleSaveDependencies = (dependencies) => {
+    if (selectedTaskForDependencies) {
+      updateTask(selectedTaskForDependencies.id, {
+        predecessors: dependencies
+      });
+      setDependencyModalOpen(false);
+      setSelectedTaskForDependencies(null);
+      
+      // Executa recálculo automático após salvar dependências
+      setTimeout(() => {
+        recalculateProjectDates();
+      }, 100);
+    }
+  };
+
+  const handleCloseDependencyModal = () => {
+    setDependencyModalOpen(false);
+    setSelectedTaskForDependencies(null);
+  };
+
+  // Funções para edição inline
+  const startEditing = (taskId, field, currentValue) => {
+    setEditingCell({ taskId, field });
+    setEditingValue(currentValue || '');
+  };
+
+  const cancelEditing = () => {
+    setEditingCell(null);
+    setEditingValue('');
+  };
+
+  const saveEdit = () => {
+    if (editingCell && editingValue.trim()) {
+      updateTask(editingCell.taskId, {
+        [editingCell.field]: editingValue.trim()
+      });
+    }
+    cancelEditing();
+  };
+
+  const handleKeyPress = (e) => {
+    if (e.key === 'Enter') {
+      saveEdit();
+    } else if (e.key === 'Escape') {
+      cancelEditing();
+    }
+  };
+
+  // Executa recálculo automático quando as dependências das tarefas mudam
+  useEffect(() => {
+    if (projectTasks.length > 0) {
+      // Verifica se alguma tarefa tem predecessoras e está em modo automático
+      const hasAutomaticTasksWithPredecessors = projectTasks.some(task => 
+        task.predecessors && task.predecessors.length > 0 && 
+        task.schedulingMode === 'automatic'
+      );
+      
+      // Verifica se há tarefas em modo automático que precisam de recálculo
+      const hasAutomaticTasks = projectTasks.some(task => 
+        task.schedulingMode === 'automatic'
+      );
+      
+      if (hasAutomaticTasksWithPredecessors || hasAutomaticTasks) {
+        // Executa recálculo com um pequeno delay para evitar múltiplas execuções
+        const timeoutId = setTimeout(() => {
+          recalculateProjectDates();
+        }, 500);
+        
+        return () => clearTimeout(timeoutId);
+      }
+    }
+  }, [
+    projectTasks.length, 
+    projectTasks.map(t => t.predecessors).join(','),
+    projectTasks.map(t => t.schedulingMode).join(','),
+    projectTasks.map(t => `${t.startDate}-${t.endDate}-${t.duration}`).join(',')
+  ]);
+
   // Filtrar tarefas
   const filteredTasks = projectTasks.filter(task => {
     const matchesSearch = !searchTerm || (task.title && task.title.toLowerCase().includes(searchTerm.toLowerCase()));
@@ -200,7 +340,7 @@ const ProjectGantt = () => {
   const addNewTask = () => {
     if (newTaskTitle.trim()) {
       const newTask = {
-        id: `SEC-${projectTasks.length + 1}`,
+        id: `${project.acronym}-${projectTasks.length + 1}`,
         title: newTaskTitle.trim(),
         type: 'Task',
         status: 'A Fazer',
@@ -212,12 +352,14 @@ const ProjectGantt = () => {
         epic: '',
         storyPoints: 0,
         progress: 0,
-        level: 0
+        level: 0,
+        projectId: projectId,
+        schedulingMode: 'automatic',
+        dependencies: []
       };
       
       // Adicionar tarefa ao store
-      const updatedTasks = [...projectTasks, newTask];
-      updateProject(projectId, { tasks: updatedTasks });
+      addTask(newTask);
       
       setNewTaskTitle('');
       setShowNewTaskInput(false);
@@ -226,8 +368,7 @@ const ProjectGantt = () => {
 
   // Função para remover tarefa
   const removeTask = (taskId) => {
-    const updatedTasks = projectTasks.filter(task => task.id !== taskId);
-    updateProject(projectId, { tasks: updatedTasks });
+    deleteTask(taskId);
   };
 
   // Função para alternar colapso de tarefas
@@ -309,12 +450,12 @@ const ProjectGantt = () => {
                 </div>
                 <div className="flex items-center space-x-2">
                   <button
-                    onClick={() => setShowNewTaskInput(!showNewTaskInput)}
-                    className="p-2 text-green-600 hover:text-green-800 hover:bg-green-100 rounded-lg transition-colors"
-                    title="Adicionar nova tarefa"
+                    onClick={handleManualRecalculation}
+                    className="p-2 text-blue-600 hover:text-blue-800 hover:bg-blue-100 rounded-lg transition-colors"
+                    title="Recalcular datas automaticamente"
                   >
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                     </svg>
                   </button>
                   <button
@@ -344,7 +485,9 @@ const ProjectGantt = () => {
                       prioridade: 'Prioridade',
                       epico: 'Épico',
                       sp: 'SP',
-                      progresso: 'Progresso'
+                      progresso: 'Progresso',
+                      modoAgendamento: 'Modo Agendamento',
+                      dependencias: 'Dependências'
                     }).map(([key, label]) => (
                       <label key={key} className="flex items-center space-x-2 text-sm">
                         <input
@@ -360,43 +503,13 @@ const ProjectGantt = () => {
                 </div>
               )}
 
-              {/* Input para nova tarefa */}
-              {showNewTaskInput && (
-                <div className="px-6 py-4 bg-green-50 border-b border-green-200">
-                  <div className="flex items-center space-x-3">
-                    <input
-                      type="text"
-                      value={newTaskTitle}
-                      onChange={(e) => setNewTaskTitle(e.target.value)}
-                      placeholder="Digite o nome da nova tarefa..."
-                      className="flex-1 px-3 py-2 border border-green-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                      onKeyPress={(e) => e.key === 'Enter' && addNewTask()}
-                      autoFocus
-                    />
-                    <button
-                      onClick={addNewTask}
-                      className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
-                    >
-                      Adicionar
-                    </button>
-                    <button
-                      onClick={() => {
-                        setShowNewTaskInput(false);
-                        setNewTaskTitle('');
-                      }}
-                      className="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition-colors"
-                    >
-                      Cancelar
-                    </button>
-                  </div>
-                </div>
-              )}
+              {/* Input para nova tarefa - REMOVIDO */}
               
               {/* Rolagem horizontal no topo */}
               <div className="mb-4">
                 <div className="flex">
                   {/* Espaço para colunas fixas */}
-                  <div className="flex-shrink-0" style={{ width: '544px' }}></div>
+                  <div className="flex-shrink-0" style={{ width: '510px' }}></div>
                   {/* Barra de rolagem horizontal */}
                   <div className="flex-1 overflow-x-auto" id="horizontal-scroll-top">
                     <div style={{ width: '1200px', height: '1px' }}></div>
@@ -405,21 +518,21 @@ const ProjectGantt = () => {
               </div>
               
               {/* Container da tabela com rolagem horizontal avançada */}
-              <div className="flex border border-gray-200 rounded-lg overflow-hidden">
+              <div className="gantt-table-container flex border border-gray-200 rounded-lg overflow-hidden">
                 {/* Colunas fixas à esquerda */}
-                <div className="flex-shrink-0 bg-white" style={{ width: '544px' }}>
+                <div className="flex-shrink-0 bg-white" style={{ width: '510px' }}>
                   <div>
-                    <table className="w-full">
+                    <table className="gantt-task-table w-full table-fixed">
                       <thead className="bg-gray-50 sticky top-0 z-10">
                         <tr>
-                          <th className="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider" style={{ width: '80px' }}>Ações</th>
-                          <th className="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" style={{ width: '100px' }}>ID</th>
-                          <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" style={{ width: '364px' }}>Nome da Tarefa</th>
+                          <th className="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider" style={{ width: '120px' }}>Ações</th>
+                          <th className="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" style={{ width: '80px' }}>ID</th>
+                          <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" style={{ width: '310px' }}>Nome da Tarefa</th>
                         </tr>
                       </thead>
                       <tbody className="bg-white divide-y divide-gray-100">
                         {getVisibleTasks(filteredTasks).map((task) => (
-                          <tr key={task.id} className="hover:bg-gray-50" style={{ height: '80px' }}>
+                          <tr key={task.id} className="gantt-task-row hover:bg-gray-50" style={{ height: '80px' }}>
                             <td className="px-2 py-3 whitespace-nowrap text-center align-middle" style={{ height: '60px' }}>
                               <div className="flex justify-center space-x-1">
                                 <button
@@ -465,11 +578,12 @@ const ProjectGantt = () => {
                               <div className="flex items-center h-full">
                                 <div 
                                   style={{ 
-                                    marginLeft: `${(task.level || 0) * 20}px`,
-                                    paddingLeft: `${(task.level || 0) * 4}px`
+                                    marginLeft: `${(task.level || 0) * 50}px`,
+                                    paddingLeft: `${(task.level || 0) * 15}px`
                                   }} 
                                   className="flex items-center w-full"
                                 >
+                                  {/* Seta de colapsar (apenas se tem filhas) */}
                                   {hasChildTasks(task.id) && (
                                     <button
                                       onClick={() => toggleTaskCollapse(task.id)}
@@ -484,16 +598,91 @@ const ProjectGantt = () => {
                                     </button>
                                   )}
                                   {task.level > 0 && (
-                                    <span className="text-gray-400 mr-2 flex-shrink-0">└─</span>
+                                    <span className="text-gray-400 mr-2 flex-shrink-0 font-mono">└─</span>
                                   )}
                                   <span className={`${task.level === 0 ? 'font-semibold text-gray-900' : 'text-gray-700'} truncate`}>
-                                    {task.title || 'Sem título'}
+                                    {editingCell?.taskId === task.id && editingCell?.field === 'title' ? (
+                                      <input
+                                        type="text"
+                                        value={editingValue}
+                                        onChange={(e) => setEditingValue(e.target.value)}
+                                        onKeyDown={handleKeyPress}
+                                        onBlur={saveEdit}
+                                        className="w-full px-1 py-0 text-sm border border-blue-300 rounded focus:outline-none focus:border-blue-500"
+                                        autoFocus
+                                      />
+                                    ) : (
+                                      <span 
+                                        onClick={() => startEditing(task.id, 'title', task.title)}
+                                        className="cursor-pointer hover:bg-gray-100 px-1 py-0 rounded"
+                                        title="Clique para editar"
+                                      >
+                                        {task.title || 'Sem título'}
+                                      </span>
+                                    )}
                                   </span>
                                 </div>
                               </div>
                             </td>
                           </tr>
                         ))}
+                        
+                        {/* Linha de inserção rápida */}
+                        {showNewTaskInput ? (
+                          <tr className="gantt-task-row bg-green-50 border-t-2 border-green-200" style={{ height: '26px' }}>
+                            <td className="px-2 py-1 whitespace-nowrap text-center align-middle">
+                              <div className="flex justify-center space-x-1">
+                                <button
+                                  onClick={addNewTask}
+                                  className="p-1 text-green-600 hover:text-green-800 hover:bg-green-100 rounded transition-colors"
+                                  title="Salvar tarefa"
+                                >
+                                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                  </svg>
+                                </button>
+                                <button
+                                  onClick={() => {
+                                    setShowNewTaskInput(false);
+                                    setNewTaskTitle('');
+                                  }}
+                                  className="p-1 text-red-600 hover:text-red-800 hover:bg-red-100 rounded transition-colors"
+                                  title="Cancelar"
+                                >
+                                  <XMarkIcon className="w-3 h-3" />
+                                </button>
+                              </div>
+                            </td>
+                            <td className="px-2 py-1 whitespace-nowrap text-left align-middle">
+                              <span className="text-xs font-mono text-gray-400 bg-gray-100 px-2 py-1 rounded">
+                                {project.acronym}-{projectTasks.length + 1}
+                              </span>
+                            </td>
+                            <td className="px-3 py-1 text-left align-middle">
+                              <input
+                                type="text"
+                                value={newTaskTitle}
+                                onChange={(e) => setNewTaskTitle(e.target.value)}
+                                placeholder="Digite o nome da nova tarefa..."
+                                className="w-full px-2 py-1 text-sm border border-green-300 rounded focus:ring-1 focus:ring-green-500 focus:border-green-500"
+                                onKeyPress={(e) => e.key === 'Enter' && addNewTask()}
+                                autoFocus
+                              />
+                            </td>
+                          </tr>
+                        ) : (
+                          <tr className="gantt-task-row hover:bg-gray-50" style={{ height: '26px' }}>
+                            <td colSpan="3" className="px-3 py-1 text-center align-middle">
+                              <button
+                                onClick={() => setShowNewTaskInput(true)}
+                                className="text-sm text-gray-500 hover:text-gray-700 hover:bg-gray-100 px-3 py-1 rounded transition-colors flex items-center justify-center w-full"
+                              >
+                                <PlusIcon className="w-4 h-4 mr-2" />
+                                Adicionar nova tarefa...
+                              </button>
+                            </td>
+                          </tr>
+                        )}
                       </tbody>
                     </table>
                   </div>
@@ -501,12 +690,12 @@ const ProjectGantt = () => {
 
                 {/* Colunas com rolagem horizontal */}
                 <div className="flex-1 overflow-x-auto bg-white" id="horizontal-scroll-bottom">
-                  <table className="w-full" style={{ minWidth: '1200px' }}>
+                  <table className="gantt-task-table w-full table-fixed" style={{ minWidth: '1200px' }}>
                     <thead className="bg-gray-50 sticky top-0 z-10">
                       <tr>
                         {visibleColumns.tipo && <th className="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider" style={{ width: '80px' }}>Tipo</th>}
                         {visibleColumns.status && <th className="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider" style={{ width: '100px' }}>Status</th>}
-                        {visibleColumns.responsavel && <th className="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider" style={{ width: '140px' }}>Responsável</th>}
+                        {visibleColumns.responsavel && <th className="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider" style={{ width: '60px' }}>Resp.</th>}
                         {visibleColumns.dataInicio && <th className="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider" style={{ width: '90px' }}>Início</th>}
                         {visibleColumns.dataFim && <th className="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider" style={{ width: '90px' }}>Fim</th>}
                         {visibleColumns.duracao && <th className="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider" style={{ width: '80px' }}>Duração</th>}
@@ -514,46 +703,87 @@ const ProjectGantt = () => {
                         {visibleColumns.epico && <th className="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider" style={{ width: '120px' }}>Épico</th>}
                         {visibleColumns.sp && <th className="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider" style={{ width: '60px' }}>SP</th>}
                         {visibleColumns.progresso && <th className="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider" style={{ width: '120px' }}>Progresso</th>}
+                        {visibleColumns.modoAgendamento && <th className="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider" style={{ width: '100px' }}>Modo</th>}
+                        {visibleColumns.dependencias && <th className="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider" style={{ width: '120px' }}>Dependências</th>}
                       </tr>
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-100">
                       {getVisibleTasks(filteredTasks).map((task) => (
-                        <tr key={task.id} className="hover:bg-gray-50" style={{ height: '80px' }}>
+                        <tr key={task.id} className="gantt-task-row hover:bg-gray-50" style={{ height: '80px' }}>
                           {visibleColumns.tipo && (
                             <td className="px-2 py-3 whitespace-nowrap text-center align-middle" style={{ height: '60px' }}>
-                              <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                                task.type === 'Epic' ? 'bg-purple-100 text-purple-800' :
-                                task.type === 'Story' ? 'bg-blue-100 text-blue-800' :
-                                task.type === 'Task' ? 'bg-green-100 text-green-800' :
-                                task.type === 'Bug' ? 'bg-red-100 text-red-800' :
-                                'bg-gray-100 text-gray-800'
-                              }`}>
-                                {task.type || 'Task'}
-                              </span>
+                              {editingCell?.taskId === task.id && editingCell?.field === 'type' ? (
+                                <select
+                                  value={editingValue}
+                                  onChange={(e) => setEditingValue(e.target.value)}
+                                  onBlur={saveEdit}
+                                  onKeyDown={handleKeyPress}
+                                  className="text-xs px-2 py-1 border border-blue-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                                  autoFocus
+                                >
+                                  <option value="Task">Task</option>
+                                  <option value="Story">Story</option>
+                                  <option value="Epic">Epic</option>
+                                  <option value="Bug">Bug</option>
+                                </select>
+                              ) : (
+                                <span 
+                                  onClick={() => startEditing(task.id, 'type', task.type)}
+                                  className={`cursor-pointer hover:bg-gray-100 px-2 py-1 rounded inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                                    task.type === 'Epic' ? 'bg-purple-100 text-purple-800' :
+                                    task.type === 'Story' ? 'bg-blue-100 text-blue-800' :
+                                    task.type === 'Task' ? 'bg-green-100 text-green-800' :
+                                    task.type === 'Bug' ? 'bg-red-100 text-red-800' :
+                                    'bg-gray-100 text-gray-800'
+                                  }`}
+                                  title="Clique para editar"
+                                >
+                                  {task.type || 'Task'}
+                                </span>
+                              )}
                             </td>
                           )}
                           {visibleColumns.status && (
                             <td className="px-2 py-3 whitespace-nowrap text-center align-middle" style={{ height: '60px' }}>
-                              <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                                task.status === 'Concluído' ? 'bg-green-100 text-green-800' :
-                                task.status === 'Em Progresso' ? 'bg-yellow-100 text-yellow-800' :
-                                'bg-blue-100 text-blue-800'
-                              }`}>
-                                {task.status || 'A Fazer'}
-                              </span>
+                              {editingCell?.taskId === task.id && editingCell?.field === 'status' ? (
+                                <select
+                                  value={editingValue}
+                                  onChange={(e) => setEditingValue(e.target.value)}
+                                  onBlur={saveEdit}
+                                  onKeyDown={handleKeyPress}
+                                  className="text-xs px-2 py-1 border border-blue-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                                  autoFocus
+                                >
+                                  <option value="A Fazer">A Fazer</option>
+                                  <option value="Em Progresso">Em Progresso</option>
+                                  <option value="Concluído">Concluído</option>
+                                </select>
+                              ) : (
+                                <span 
+                                  onClick={() => startEditing(task.id, 'status', task.status)}
+                                  className={`cursor-pointer hover:bg-gray-100 px-2 py-1 rounded inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                                    task.status === 'Concluído' ? 'bg-green-100 text-green-800' :
+                                    task.status === 'Em Progresso' ? 'bg-yellow-100 text-yellow-800' :
+                                    'bg-blue-100 text-blue-800'
+                                  }`}
+                                  title="Clique para editar"
+                                >
+                                  {task.status || 'A Fazer'}
+                                </span>
+                              )}
                             </td>
                           )}
                           {visibleColumns.responsavel && (
                             <td className="px-2 py-3 whitespace-nowrap text-center align-middle" style={{ height: '60px' }}>
                               {task.assignee ? (
                                 <div className="flex items-center justify-center">
-                                  <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center text-white text-xs mr-2">
+                                  <div 
+                                    className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center text-white text-xs cursor-help"
+                                    title={typeof task.assignee === 'string' ? task.assignee : task.assignee.name || 'Usuário'}
+                                  >
                                     {typeof task.assignee === 'string' ? task.assignee.charAt(0).toUpperCase() : 
                                      task.assignee.name ? task.assignee.name.charAt(0).toUpperCase() : 'U'}
                                   </div>
-                                  <span className="text-sm truncate max-w-20">
-                                    {typeof task.assignee === 'string' ? task.assignee : task.assignee.name || 'Usuário'}
-                                  </span>
                                 </div>
                               ) : (
                                 <span className="text-gray-400 text-sm">-</span>
@@ -584,7 +814,26 @@ const ProjectGantt = () => {
                           {visibleColumns.prioridade && (
                             <td className="px-2 py-3 whitespace-nowrap text-center align-middle" style={{ height: '60px' }}>
                               <div className="flex items-center justify-center">
-                                {task.priority === 'Alta' ? (
+                                {editingCell?.taskId === task.id && editingCell?.field === 'priority' ? (
+                                  <select
+                                    value={editingValue}
+                                    onChange={(e) => setEditingValue(e.target.value)}
+                                    onBlur={saveEdit}
+                                    onKeyDown={handleKeyPress}
+                                    className="text-xs px-2 py-1 border border-blue-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                                    autoFocus
+                                  >
+                                    <option value="Baixa">Baixa</option>
+                                    <option value="Média">Média</option>
+                                    <option value="Alta">Alta</option>
+                                  </select>
+                                ) : (
+                                  <div 
+                                    onClick={() => startEditing(task.id, 'priority', task.priority)}
+                                    className="cursor-pointer hover:bg-gray-100 px-2 py-1 rounded"
+                                    title="Clique para editar"
+                                  >
+                                    {task.priority === 'Alta' ? (
                                   <div className="flex items-center">
                                     <svg className="w-4 h-4 text-red-500 mr-1" fill="currentColor" viewBox="0 0 20 20">
                                       <path fillRule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clipRule="evenodd" />
@@ -607,6 +856,8 @@ const ProjectGantt = () => {
                                   </div>
                                 ) : (
                                   <span className="text-sm text-gray-500">-</span>
+                                )}
+                                  </div>
                                 )}
                               </div>
                             </td>
@@ -638,8 +889,53 @@ const ProjectGantt = () => {
                               </div>
                             </td>
                           )}
+                          {visibleColumns.modoAgendamento && (
+                            <td className="px-2 py-3 whitespace-nowrap text-center align-middle" style={{ height: '60px' }}>
+                              <select
+                                value={task.schedulingMode || 'automatic'}
+                                onChange={(e) => updateTask(task.id, { schedulingMode: e.target.value })}
+                                className="text-xs px-2 py-1 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                              >
+                                <option value="automatic">Auto</option>
+                                <option value="manual">Manual</option>
+                              </select>
+                            </td>
+                          )}
+                          {visibleColumns.dependencias && (
+                            <td className="px-2 py-3 whitespace-nowrap text-center align-middle" style={{ height: '60px' }}>
+                              <DependencyDisplay
+                                task={task}
+                                allTasks={projectTasks}
+                                onEditDependencies={handleEditDependencies}
+                              />
+                            </td>
+                          )}
                         </tr>
                       ))}
+                      
+                      {/* Linha de inserção rápida - tabela direita */}
+                      {showNewTaskInput ? (
+                        <tr className="gantt-task-row bg-green-50 border-t-2 border-green-200" style={{ height: '26px' }}>
+                          {visibleColumns.tipo && <td className="px-2 py-1 text-center align-middle"><span className="text-xs text-gray-400">Task</span></td>}
+                          {visibleColumns.status && <td className="px-2 py-1 text-center align-middle"><span className="text-xs text-gray-400">A Fazer</span></td>}
+                          {visibleColumns.responsavel && <td className="px-2 py-1 text-center align-middle"><span className="text-xs text-gray-400">-</span></td>}
+                          {visibleColumns.dataInicio && <td className="px-2 py-1 text-center align-middle"><span className="text-xs text-gray-400">-</span></td>}
+                          {visibleColumns.dataFim && <td className="px-2 py-1 text-center align-middle"><span className="text-xs text-gray-400">-</span></td>}
+                          {visibleColumns.duracao && <td className="px-2 py-1 text-center align-middle"><span className="text-xs text-gray-400">-</span></td>}
+                          {visibleColumns.prioridade && <td className="px-2 py-1 text-center align-middle"><span className="text-xs text-gray-400">Média</span></td>}
+                          {visibleColumns.epico && <td className="px-2 py-1 text-center align-middle"><span className="text-xs text-gray-400">-</span></td>}
+                          {visibleColumns.sp && <td className="px-2 py-1 text-center align-middle"><span className="text-xs text-gray-400">0</span></td>}
+                          {visibleColumns.progresso && <td className="px-2 py-1 text-center align-middle"><span className="text-xs text-gray-400">0%</span></td>}
+                          {visibleColumns.modoAgendamento && <td className="px-2 py-1 text-center align-middle"><span className="text-xs text-gray-400">Auto</span></td>}
+                          {visibleColumns.dependencias && <td className="px-2 py-1 text-center align-middle"><span className="text-xs text-gray-400">-</span></td>}
+                        </tr>
+                      ) : (
+                        <tr className="gantt-task-row hover:bg-gray-50" style={{ height: '26px' }}>
+                          <td colSpan="12" className="px-3 py-1 text-center align-middle">
+                            <span className="text-xs text-gray-400">Nova tarefa será adicionada aqui...</span>
+                          </td>
+                        </tr>
+                      )}
                     </tbody>
                   </table>
                 </div>
@@ -995,6 +1291,15 @@ const ProjectGantt = () => {
           </div>
         )}
       </div>
+
+      {/* Modal de Dependências */}
+      <DependencyModal
+        isOpen={dependencyModalOpen}
+        onClose={handleCloseDependencyModal}
+        task={selectedTaskForDependencies}
+        allTasks={projectTasks}
+        onSave={handleSaveDependencies}
+      />
     </div>
   );
 };

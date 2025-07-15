@@ -119,6 +119,7 @@ const useAppStore = create(
           tags: ['setup', 'environment'],
           comments: [],
           attachments: [],
+          schedulingMode: 'automatic',
           createdAt: new Date('2024-01-10'),
           updatedAt: new Date('2024-01-17')
         },
@@ -149,6 +150,7 @@ const useAppStore = create(
           tags: ['auth', 'security'],
           comments: [],
           attachments: [],
+          schedulingMode: 'automatic',
           createdAt: new Date('2024-01-15'),
           updatedAt: new Date('2024-01-20'),
           hasChildren: true,
@@ -181,6 +183,7 @@ const useAppStore = create(
           tags: ['auth', 'backend'],
           comments: [],
           attachments: [],
+          schedulingMode: 'automatic',
           createdAt: new Date('2024-01-15'),
           updatedAt: new Date('2024-01-20')
         },
@@ -211,6 +214,7 @@ const useAppStore = create(
           tags: ['auth', 'security'],
           comments: [],
           attachments: [],
+          schedulingMode: 'automatic',
           createdAt: new Date('2024-01-15'),
           updatedAt: new Date('2024-01-20')
         },
@@ -241,6 +245,7 @@ const useAppStore = create(
           tags: ['design', 'ui'],
           comments: [],
           attachments: [],
+          schedulingMode: 'automatic',
           createdAt: new Date('2024-01-10'),
           updatedAt: new Date('2024-01-26'),
           hasChildren: true,
@@ -273,6 +278,7 @@ const useAppStore = create(
           tags: ['wireframe', 'ux'],
           comments: [],
           attachments: [],
+          schedulingMode: 'automatic',
           createdAt: new Date('2024-01-10'),
           updatedAt: new Date('2024-01-26')
         },
@@ -303,6 +309,7 @@ const useAppStore = create(
           tags: ['prototype', 'figma'],
           comments: [],
           attachments: [],
+          schedulingMode: 'automatic',
           createdAt: new Date('2024-01-10'),
           updatedAt: new Date('2024-01-26')
         },
@@ -333,6 +340,7 @@ const useAppStore = create(
           tags: ['react', 'frontend'],
           comments: [],
           attachments: [],
+          schedulingMode: 'automatic',
           createdAt: new Date('2024-01-10'),
           updatedAt: new Date('2024-01-26')
         },
@@ -363,6 +371,7 @@ const useAppStore = create(
           tags: ['testing', 'usability'],
           comments: [],
           attachments: [],
+          schedulingMode: 'automatic',
           createdAt: new Date('2024-01-10'),
           updatedAt: new Date('2024-01-26')
         },
@@ -393,6 +402,7 @@ const useAppStore = create(
           tags: ['integration', 'api'],
           comments: [],
           attachments: [],
+          schedulingMode: 'automatic',
           createdAt: new Date('2024-01-10'),
           updatedAt: new Date('2024-01-26')
         },
@@ -423,6 +433,7 @@ const useAppStore = create(
           tags: ['security', 'testing'],
           comments: [],
           attachments: [],
+          schedulingMode: 'automatic',
           createdAt: new Date('2024-01-10'),
           updatedAt: new Date('2024-01-26')
         },
@@ -453,6 +464,7 @@ const useAppStore = create(
           tags: ['validation', 'forms'],
           comments: [],
           attachments: [],
+          schedulingMode: 'automatic',
           createdAt: new Date('2024-01-10'),
           updatedAt: new Date('2024-01-26')
         },
@@ -484,6 +496,7 @@ const useAppStore = create(
           tags: ['mobile', 'ecommerce'],
           comments: [],
           attachments: [],
+          schedulingMode: 'automatic',
           createdAt: new Date('2024-02-01'),
           updatedAt: new Date('2024-02-01')
         },
@@ -514,6 +527,7 @@ const useAppStore = create(
           tags: ['website', 'design'],
           comments: [],
           attachments: [],
+          schedulingMode: 'automatic',
           createdAt: new Date('2024-02-01'),
           updatedAt: new Date('2024-02-01')
         }
@@ -533,6 +547,7 @@ const useAppStore = create(
           userId: '1',
           status: 'Draft',
           cost: 150,
+          schedulingMode: 'automatic',
           createdAt: new Date(),
           updatedAt: new Date()
         }
@@ -549,7 +564,8 @@ const useAppStore = create(
             ...project, 
             id: newId,
             taskCounter: 0,
-            createdAt: new Date(),
+            schedulingMode: 'automatic',
+          createdAt: new Date(),
             updatedAt: new Date()
           }]
         };
@@ -587,7 +603,8 @@ const useAppStore = create(
           tasks: [...state.tasks, { 
             ...task, 
             id: taskId,
-            createdAt: new Date(),
+            schedulingMode: 'automatic',
+          createdAt: new Date(),
             updatedAt: new Date()
           }]
         };
@@ -600,6 +617,7 @@ const useAppStore = create(
       addTask: (task) => set((state) => ({
         tasks: [...state.tasks, {
           ...task,
+          schedulingMode: 'automatic',
           createdAt: new Date(),
           updatedAt: new Date()
         }]
@@ -629,6 +647,7 @@ const useAppStore = create(
         timeEntries: [...state.timeEntries, {
           ...entry,
           id: Date.now().toString(),
+          schedulingMode: 'automatic',
           createdAt: new Date(),
           updatedAt: new Date()
         }]

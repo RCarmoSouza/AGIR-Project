@@ -18,11 +18,41 @@ const CalendarsManagement = () => {
   const [formData, setFormData] = useState({
     name: '',
     description: '',
-    dailyHours: 8,
-    startTime: '08:00',
-    endTime: '17:00',
-    lunchStart: '12:00',
-    lunchEnd: '13:00',
+    // Horários por tipo de contrato
+    contractSchedules: {
+      efetivo: {
+        dailyHours: 8,
+        startTime: '08:00',
+        endTime: '17:00',
+        lunchStart: '12:00',
+        lunchEnd: '13:00',
+        enabled: true
+      },
+      estagio: {
+        dailyHours: 6,
+        startTime: '08:00',
+        endTime: '15:00',
+        lunchStart: '12:00',
+        lunchEnd: '13:00',
+        enabled: true
+      },
+      meio_turno: {
+        dailyHours: 4,
+        startTime: '08:00',
+        endTime: '12:00',
+        lunchStart: '',
+        lunchEnd: '',
+        enabled: true
+      },
+      horista: {
+        dailyHours: 0,
+        startTime: '',
+        endTime: '',
+        lunchStart: '',
+        lunchEnd: '',
+        enabled: false // Horista não tem horário fixo
+      }
+    },
     workDays: {
       monday: true,
       tuesday: true,
@@ -41,11 +71,40 @@ const CalendarsManagement = () => {
       id: 1,
       name: 'Padrão Porto Alegre',
       description: 'Calendário padrão para a base de Porto Alegre',
-      dailyHours: 8,
-      startTime: '08:00',
-      endTime: '17:00',
-      lunchStart: '12:00',
-      lunchEnd: '13:00',
+      contractSchedules: {
+        efetivo: {
+          dailyHours: 8,
+          startTime: '08:00',
+          endTime: '17:00',
+          lunchStart: '12:00',
+          lunchEnd: '13:00',
+          enabled: true
+        },
+        estagio: {
+          dailyHours: 6,
+          startTime: '08:00',
+          endTime: '15:00',
+          lunchStart: '12:00',
+          lunchEnd: '13:00',
+          enabled: true
+        },
+        meio_turno: {
+          dailyHours: 4,
+          startTime: '08:00',
+          endTime: '12:00',
+          lunchStart: '',
+          lunchEnd: '',
+          enabled: true
+        },
+        horista: {
+          dailyHours: 0,
+          startTime: '',
+          endTime: '',
+          lunchStart: '',
+          lunchEnd: '',
+          enabled: false
+        }
+      },
       workDays: { monday: true, tuesday: true, wednesday: true, thursday: true, friday: true, saturday: false, sunday: false },
       holidays: [
         { date: '2025-01-01', name: 'Confraternização Universal' },
@@ -59,11 +118,40 @@ const CalendarsManagement = () => {
       id: 2,
       name: 'Padrão São Paulo',
       description: 'Calendário padrão para a base de São Paulo',
-      dailyHours: 8,
-      startTime: '09:00',
-      endTime: '18:00',
-      lunchStart: '12:00',
-      lunchEnd: '13:00',
+      contractSchedules: {
+        efetivo: {
+          dailyHours: 8,
+          startTime: '09:00',
+          endTime: '18:00',
+          lunchStart: '12:00',
+          lunchEnd: '13:00',
+          enabled: true
+        },
+        estagio: {
+          dailyHours: 6,
+          startTime: '09:00',
+          endTime: '16:00',
+          lunchStart: '12:00',
+          lunchEnd: '13:00',
+          enabled: true
+        },
+        meio_turno: {
+          dailyHours: 4,
+          startTime: '09:00',
+          endTime: '13:00',
+          lunchStart: '',
+          lunchEnd: '',
+          enabled: true
+        },
+        horista: {
+          dailyHours: 0,
+          startTime: '',
+          endTime: '',
+          lunchStart: '',
+          lunchEnd: '',
+          enabled: false
+        }
+      },
       workDays: { monday: true, tuesday: true, wednesday: true, thursday: true, friday: true, saturday: false, sunday: false },
       holidays: [
         { date: '2025-01-01', name: 'Confraternização Universal' },
@@ -77,11 +165,40 @@ const CalendarsManagement = () => {
       id: 3,
       name: 'Calendário Flexível',
       description: 'Calendário com horário flexível para consultores',
-      dailyHours: 6,
-      startTime: '10:00',
-      endTime: '17:00',
-      lunchStart: '12:30',
-      lunchEnd: '13:30',
+      contractSchedules: {
+        efetivo: {
+          dailyHours: 6,
+          startTime: '10:00',
+          endTime: '17:00',
+          lunchStart: '12:30',
+          lunchEnd: '13:30',
+          enabled: true
+        },
+        estagio: {
+          dailyHours: 4,
+          startTime: '10:00',
+          endTime: '15:00',
+          lunchStart: '',
+          lunchEnd: '',
+          enabled: true
+        },
+        meio_turno: {
+          dailyHours: 3,
+          startTime: '10:00',
+          endTime: '13:00',
+          lunchStart: '',
+          lunchEnd: '',
+          enabled: true
+        },
+        horista: {
+          dailyHours: 0,
+          startTime: '',
+          endTime: '',
+          lunchStart: '',
+          lunchEnd: '',
+          enabled: false
+        }
+      },
       workDays: { monday: true, tuesday: true, wednesday: true, thursday: true, friday: true, saturday: true, sunday: false },
       holidays: [
         { date: '2025-01-01', name: 'Confraternização Universal' },
@@ -101,11 +218,40 @@ const CalendarsManagement = () => {
     setFormData({
       name: '',
       description: '',
-      dailyHours: 8,
-      startTime: '08:00',
-      endTime: '17:00',
-      lunchStart: '12:00',
-      lunchEnd: '13:00',
+      contractSchedules: {
+        efetivo: {
+          dailyHours: 8,
+          startTime: '08:00',
+          endTime: '17:00',
+          lunchStart: '12:00',
+          lunchEnd: '13:00',
+          enabled: true
+        },
+        estagio: {
+          dailyHours: 6,
+          startTime: '08:00',
+          endTime: '15:00',
+          lunchStart: '12:00',
+          lunchEnd: '13:00',
+          enabled: true
+        },
+        meio_turno: {
+          dailyHours: 4,
+          startTime: '08:00',
+          endTime: '12:00',
+          lunchStart: '',
+          lunchEnd: '',
+          enabled: true
+        },
+        horista: {
+          dailyHours: 0,
+          startTime: '',
+          endTime: '',
+          lunchStart: '',
+          lunchEnd: '',
+          enabled: false
+        }
+      },
       workDays: {
         monday: true,
         tuesday: true,
@@ -149,11 +295,7 @@ const CalendarsManagement = () => {
     setFormData({
       name: calendar.name,
       description: calendar.description,
-      dailyHours: calendar.dailyHours,
-      startTime: calendar.startTime,
-      endTime: calendar.endTime,
-      lunchStart: calendar.lunchStart,
-      lunchEnd: calendar.lunchEnd,
+      contractSchedules: calendar.contractSchedules,
       workDays: calendar.workDays,
       holidays: calendar.holidays
     });
@@ -165,11 +307,7 @@ const CalendarsManagement = () => {
     setFormData({
       name: `${calendar.name} (Cópia)`,
       description: calendar.description,
-      dailyHours: calendar.dailyHours,
-      startTime: calendar.startTime,
-      endTime: calendar.endTime,
-      lunchStart: calendar.lunchStart,
-      lunchEnd: calendar.lunchEnd,
+      contractSchedules: calendar.contractSchedules,
       workDays: calendar.workDays,
       holidays: calendar.holidays
     });
@@ -306,12 +444,29 @@ const CalendarsManagement = () => {
                         )}
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">
-                        {calendar.startTime} - {calendar.endTime}
-                      </div>
-                      <div className="text-sm text-gray-500">
-                        {calendar.dailyHours}h/dia (Almoço: {calendar.lunchStart}-{calendar.lunchEnd})
+                    <td className="px-6 py-4">
+                      <div className="space-y-1">
+                        {Object.entries(calendar.contractSchedules)
+                          .filter(([_, schedule]) => schedule.enabled)
+                          .map(([contractType, schedule]) => (
+                            <div key={contractType} className="text-xs">
+                              <span className="font-medium text-gray-700 capitalize">
+                                {contractType.replace('_', ' ')}:
+                              </span>
+                              <span className="text-gray-600 ml-1">
+                                {schedule.dailyHours > 0 
+                                  ? `${schedule.startTime}-${schedule.endTime} (${schedule.dailyHours}h)`
+                                  : 'Sem horário fixo'
+                                }
+                                {schedule.lunchStart && schedule.lunchEnd && (
+                                  <span className="text-gray-500">
+                                    {' '}• Almoço: {schedule.lunchStart}-{schedule.lunchEnd}
+                                  </span>
+                                )}
+                              </span>
+                            </div>
+                          ))
+                        }
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">

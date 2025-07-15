@@ -1,0 +1,737 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+}
+
+:root {
+  --radius: 0.625rem;
+  --background: oklch(1 0 0);
+  --foreground: oklch(0.145 0 0);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.145 0 0);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.145 0 0);
+  --primary: oklch(0.205 0 0);
+  --primary-foreground: oklch(0.985 0 0);
+  --secondary: oklch(0.97 0 0);
+  --secondary-foreground: oklch(0.205 0 0);
+  --muted: oklch(0.97 0 0);
+  --muted-foreground: oklch(0.556 0 0);
+  --accent: oklch(0.97 0 0);
+  --accent-foreground: oklch(0.205 0 0);
+  --destructive: oklch(0.577 0.245 27.325);
+  --border: oklch(0.922 0 0);
+  --input: oklch(0.922 0 0);
+  --ring: oklch(0.708 0 0);
+  --chart-1: oklch(0.646 0.222 41.116);
+  --chart-2: oklch(0.6 0.118 184.704);
+  --chart-3: oklch(0.398 0.07 227.392);
+  --chart-4: oklch(0.828 0.189 84.429);
+  --chart-5: oklch(0.769 0.188 70.08);
+  --sidebar: oklch(0.985 0 0);
+  --sidebar-foreground: oklch(0.145 0 0);
+  --sidebar-primary: oklch(0.205 0 0);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.97 0 0);
+  --sidebar-accent-foreground: oklch(0.205 0 0);
+  --sidebar-border: oklch(0.922 0 0);
+  --sidebar-ring: oklch(0.708 0 0);
+}
+
+.dark {
+  --background: oklch(0.145 0 0);
+  --foreground: oklch(0.985 0 0);
+  --card: oklch(0.205 0 0);
+  --card-foreground: oklch(0.985 0 0);
+  --popover: oklch(0.205 0 0);
+  --popover-foreground: oklch(0.985 0 0);
+  --primary: oklch(0.922 0 0);
+  --primary-foreground: oklch(0.205 0 0);
+  --secondary: oklch(0.269 0 0);
+  --secondary-foreground: oklch(0.985 0 0);
+  --muted: oklch(0.269 0 0);
+  --muted-foreground: oklch(0.708 0 0);
+  --accent: oklch(0.269 0 0);
+  --accent-foreground: oklch(0.985 0 0);
+  --destructive: oklch(0.704 0.191 22.216);
+  --border: oklch(1 0 0 / 10%);
+  --input: oklch(1 0 0 / 15%);
+  --ring: oklch(0.556 0 0);
+  --chart-1: oklch(0.488 0.243 264.376);
+  --chart-2: oklch(0.696 0.17 162.48);
+  --chart-3: oklch(0.769 0.188 70.08);
+  --chart-4: oklch(0.627 0.265 303.9);
+  --chart-5: oklch(0.645 0.246 16.439);
+  --sidebar: oklch(0.205 0 0);
+  --sidebar-foreground: oklch(0.985 0 0);
+  --sidebar-primary: oklch(0.488 0.243 264.376);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.269 0 0);
+  --sidebar-accent-foreground: oklch(0.985 0 0);
+  --sidebar-border: oklch(1 0 0 / 10%);
+  --sidebar-ring: oklch(0.556 0 0);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+
+/* ===== MELHORIAS DE COMPACTAÇÃO VISUAL - CRONOGRAMA (GANTT) ===== */
+
+/* Compactação geral da tabela de tarefas */
+.gantt-task-table {
+  font-size: 10px !important;
+  line-height: 1.1;
+}
+
+.gantt-task-table th,
+.gantt-task-table td {
+  font-size: 10px !important;
+  padding: 2px 4px !important; /* Ainda mais compacto */
+  vertical-align: middle;
+  height: 18px !important; /* Altura fixa muito compacta */
+}
+
+/* Nome da tarefa com fonte maior */
+.task-name-column {
+  font-size: 12px !important; /* Nome da tarefa em 12px */
+  font-weight: 500 !important;
+  width: 180px;
+  max-width: 180px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: left;
+  padding: 2px 6px !important; /* Padding específico para nome */
+}
+
+/* Redução de espaçamento entre linhas */
+.gantt-task-row {
+  min-height: 18px !important; /* Reduzido para 18px */
+  height: 18px !important;
+  line-height: 1.1;
+}
+
+/* Compactação de badges de status e tipo */
+.status-badge,
+.type-badge,
+.priority-badge {
+  height: 14px !important; /* Reduzido para 14px */
+  padding: 1px 4px !important; /* Ainda mais compacto */
+  font-size: 9px !important;
+  line-height: 1;
+  border-radius: 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 35px; /* Reduzido */
+  text-align: center;
+}
+
+/* Compactação de barras de progresso */
+.progress-bar {
+  height: 3px !important; /* Ainda mais fina */
+  border-radius: 1px;
+  background-color: #e5e7eb;
+  overflow: hidden;
+}
+
+.progress-bar-fill {
+  height: 100%;
+  background-color: #3b82f6;
+  transition: width 0.3s ease;
+}
+
+/* Redução de tamanho de ícones de ações */
+.action-icon {
+  width: 10px !important; /* Ícones menores */
+  height: 10px !important;
+}
+
+.action-button {
+  padding: 1px !important; /* Ainda mais compacto */
+  min-width: 14px !important; /* Ainda menores */
+  min-height: 14px !important;
+}
+
+/* Compactação de colunas específicas */
+.task-id-column {
+  width: 50px; /* Reduzido */
+  font-size: 10px !important;
+}
+
+.task-type-column {
+  width: 60px; /* Reduzido */
+  font-size: 10px !important;
+}
+
+.task-status-column {
+  width: 70px; /* Reduzido */
+  font-size: 10px !important;
+}
+
+.task-responsible-column {
+  width: 80px; /* Reduzido */
+  font-size: 10px !important;
+}
+
+.task-date-column {
+  width: 65px; /* Reduzido */
+  font-size: 10px !important;
+}
+
+.task-duration-column {
+  width: 50px; /* Reduzido */
+  font-size: 10px !important;
+}
+
+.task-priority-column {
+  width: 60px; /* Reduzido */
+  font-size: 10px !important;
+}
+
+.task-progress-column {
+  width: 50px; /* Reduzido */
+  font-size: 10px !important;
+}
+
+/* Cabeçalhos da tabela */
+.gantt-task-table th {
+  font-size: 9px !important; /* Cabeçalhos ainda menores */
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 3px 4px !important;
+  height: 20px !important;
+}
+
+/* Compactação de avatares */
+.user-avatar {
+  width: 16px !important; /* Reduzido */
+  height: 16px !important;
+  font-size: 8px !important;
+}
+
+/* Espaçamento entre ações */
+.gantt-actions {
+  display: flex;
+  gap: 1px; /* Espaçamento mínimo */
+  align-items: center;
+  justify-content: center;
+}
+
+/* Texto de todas as colunas (exceto nome da tarefa) */
+.gantt-task-table td:not(.task-name-column) {
+  font-size: 10px !important;
+  text-align: center;
+}
+
+/* Compactação específica para responsável */
+.responsible-info {
+  font-size: 10px !important;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.responsible-info .user-name {
+  font-size: 10px !important;
+  max-width: 60px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ===== RESPONSIVIDADE E ACESSIBILIDADE ===== */
+
+/* Responsividade para tablets */
+@media (max-width: 1024px) {
+  .gantt-task-table {
+    font-size: 9px !important;
+  }
+  
+  .task-name-column {
+    font-size: 11px !important;
+    width: 150px;
+    max-width: 150px;
+  }
+  
+  .gantt-task-table th,
+  .gantt-task-table td {
+    padding: 1px 3px !important;
+    height: 16px !important;
+  }
+}
+
+/* Responsividade para mobile */
+@media (max-width: 768px) {
+  .gantt-task-table {
+    font-size: 8px !important;
+  }
+  
+  .task-name-column {
+    font-size: 10px !important;
+    width: 120px;
+    max-width: 120px;
+  }
+  
+  .gantt-task-table th,
+  .gantt-task-table td {
+    padding: 1px 2px !important;
+    height: 14px !important;
+  }
+}
+
+/* Remoção de bordas verticais entre colunas */
+.gantt-task-table th,
+.gantt-task-table td {
+  border-left: none !important;
+  border-right: none !important;
+}
+
+/* Apenas bordas horizontais sutis */
+.gantt-task-table tr {
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.gantt-task-table thead tr {
+  border-bottom: 2px solid #e5e7eb;
+}
+
+/* Compactação do cabeçalho */
+.gantt-task-table thead th {
+  font-weight: 600;
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
+  color: #6b7280;
+  background-color: #f9fafb;
+  padding: 10px 12px;
+}
+
+/* Responsável - avatar compacto */
+.assignee-avatar {
+  width: 24px !important;
+  height: 24px !important;
+  font-size: 10px !important;
+}
+
+/* Indentação visual compacta */
+.task-indent-1 { padding-left: 20px !important; }
+.task-indent-2 { padding-left: 40px !important; }
+.task-indent-3 { padding-left: 60px !important; }
+.task-indent-4 { padding-left: 80px !important; }
+.task-indent-5 { padding-left: 100px !important; }
+.task-indent-6 { padding-left: 120px !important; }
+
+/* Hover effects compactos */
+.gantt-task-row:hover {
+  background-color: #f8fafc;
+}
+
+/* Seleção de linha compacta */
+.gantt-task-row.selected {
+  background-color: #eff6ff;
+  border-left: 3px solid #3b82f6;
+}
+
+/* Compactação de dropdowns e selects */
+.gantt-select {
+  font-size: 13px !important;
+  padding: 4px 8px !important;
+  min-height: 28px !important;
+}
+
+/* Tooltips para textos truncados */
+.truncated-text {
+  cursor: help;
+}
+
+/* Compactação de botões de ação */
+.gantt-actions {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+  justify-content: center;
+}
+
+.gantt-actions button {
+  padding: 2px 4px !important;
+  min-width: 20px !important;
+  min-height: 20px !important;
+}
+
+/* Estilos para diferentes prioridades - compactos */
+.priority-baixa { background-color: #d1fae5; color: #065f46; }
+.priority-media { background-color: #fef3c7; color: #92400e; }
+.priority-alta { background-color: #fed7d7; color: #c53030; }
+.priority-critica { background-color: #fecaca; color: #991b1b; }
+
+/* Estilos para diferentes status - compactos */
+.status-a-fazer { background-color: #e5e7eb; color: #374151; }
+.status-em-andamento { background-color: #dbeafe; color: #1e40af; }
+.status-concluido { background-color: #d1fae5; color: #065f46; }
+.status-bloqueado { background-color: #fecaca; color: #991b1b; }
+
+/* Estilos para diferentes tipos - compactos */
+.type-task { background-color: #e0e7ff; color: #3730a3; }
+.type-story { background-color: #ecfdf5; color: #047857; }
+.type-bug { background-color: #fef2f2; color: #dc2626; }
+.type-epic { background-color: #fdf4ff; color: #a21caf; }
+.type-feature { background-color: #eff6ff; color: #1d4ed8; }
+
+/* Compactação da área de scroll */
+.gantt-scroll-area {
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e1 #f1f5f9;
+}
+
+.gantt-scroll-area::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.gantt-scroll-area::-webkit-scrollbar-track {
+  background: #f1f5f9;
+}
+
+.gantt-scroll-area::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 3px;
+}
+
+.gantt-scroll-area::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+
+/* ===== RESPONSIVIDADE E ACESSIBILIDADE - CRONOGRAMA (GANTT) ===== */
+
+/* Responsividade para tablets */
+@media (max-width: 1024px) {
+  .gantt-task-table {
+    font-size: 13px !important;
+  }
+  
+  .gantt-task-table th,
+  .gantt-task-table td {
+    padding: 6px 8px !important;
+  }
+  
+  .gantt-task-row {
+    min-height: 32px !important;
+    height: 32px !important;
+  }
+  
+  .task-name-column {
+    width: 150px;
+    max-width: 150px;
+  }
+  
+  .action-button {
+    padding: 2px !important;
+    min-width: 20px !important;
+    min-height: 20px !important;
+  }
+  
+  .action-icon {
+    width: 14px !important;
+    height: 14px !important;
+  }
+}
+
+/* Responsividade para mobile */
+@media (max-width: 768px) {
+  .gantt-task-table {
+    font-size: 12px !important;
+  }
+  
+  .gantt-task-table th,
+  .gantt-task-table td {
+    padding: 4px 6px !important;
+  }
+  
+  .gantt-task-row {
+    min-height: 28px !important;
+    height: 28px !important;
+  }
+  
+  .task-name-column {
+    width: 120px;
+    max-width: 120px;
+  }
+  
+  .task-id-column {
+    width: 60px;
+    max-width: 60px;
+  }
+  
+  .gantt-actions {
+    gap: 2px;
+  }
+  
+  .action-button {
+    padding: 1px !important;
+    min-width: 18px !important;
+    min-height: 18px !important;
+  }
+  
+  .action-icon {
+    width: 12px !important;
+    height: 12px !important;
+  }
+  
+  /* Ocultar algumas colunas em mobile */
+  .task-duration-column,
+  .task-progress-column {
+    display: none;
+  }
+  
+  /* Compactar badges ainda mais */
+  .status-badge,
+  .type-badge,
+  .priority-badge {
+    height: 18px !important;
+    padding: 2px 6px !important;
+    font-size: 10px !important;
+    min-width: 50px;
+  }
+}
+
+/* Acessibilidade - Alto contraste */
+@media (prefers-contrast: high) {
+  .gantt-task-table {
+    border: 2px solid #000;
+  }
+  
+  .gantt-task-table th,
+  .gantt-task-table td {
+    border: 1px solid #000;
+  }
+  
+  .gantt-task-row:hover {
+    background-color: #000;
+    color: #fff;
+  }
+  
+  .status-badge,
+  .type-badge,
+  .priority-badge {
+    border: 1px solid #000;
+    font-weight: bold;
+  }
+}
+
+/* Acessibilidade - Redução de movimento */
+@media (prefers-reduced-motion: reduce) {
+  .action-button,
+  .gantt-task-row,
+  .progress-bar-fill {
+    transition: none !important;
+  }
+}
+
+/* Acessibilidade - Foco visível */
+.action-button:focus,
+.gantt-select:focus {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+}
+
+/* Melhorias para leitores de tela */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Header do projeto - responsividade */
+.project-info-header {
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+@media (max-width: 1024px) {
+  .project-info-header {
+    padding: 16px !important;
+  }
+  
+  .project-info-header > div:first-child {
+    flex-wrap: wrap;
+    gap: 16px;
+  }
+  
+  .project-info-header > div:first-child > div {
+    min-width: 120px;
+  }
+}
+
+@media (max-width: 768px) {
+  .project-info-header {
+    padding: 12px !important;
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .project-info-header > div:first-child {
+    flex-direction: column;
+    gap: 12px;
+  }
+  
+  .project-info-header > div:first-child > div {
+    flex-direction: row;
+    align-items: center;
+    min-width: auto;
+  }
+  
+  .project-info-header > div:last-child {
+    align-self: flex-start;
+    margin-top: 8px;
+  }
+}
+
+/* Scroll horizontal melhorado */
+.gantt-scroll-area {
+  scroll-behavior: smooth;
+}
+
+/* Indicadores visuais para scroll */
+.scroll-indicator {
+  position: relative;
+}
+
+.scroll-indicator::after {
+  content: '';
+  position: absolute;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  width: 20px;
+  background: linear-gradient(to left, rgba(255,255,255,1), rgba(255,255,255,0));
+  pointer-events: none;
+}
+
+/* Melhorias para toque em dispositivos móveis */
+@media (hover: none) and (pointer: coarse) {
+  .action-button {
+    min-width: 44px !important;
+    min-height: 44px !important;
+    padding: 8px !important;
+  }
+  
+  .gantt-task-row {
+    min-height: 44px !important;
+    height: auto !important;
+  }
+  
+  .gantt-task-table th,
+  .gantt-task-table td {
+    padding: 12px 8px !important;
+  }
+}
+
+/* Estados de loading e erro */
+.loading-skeleton {
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: loading 1.5s infinite;
+}
+
+@keyframes loading {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+.error-state {
+  background-color: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #dc2626;
+  padding: 12px;
+  border-radius: 6px;
+  text-align: center;
+}
+
+/* Melhorias de performance */
+.gantt-task-table {
+  will-change: scroll-position;
+  contain: layout style paint;
+}
+
+.gantt-task-row {
+  contain: layout style;
+}
+
+/* Print styles */
+@media print {
+  .gantt-task-table {
+    font-size: 10px !important;
+  }
+  
+  .action-button {
+    display: none !important;
+  }
+  
+  .gantt-task-row {
+    break-inside: avoid;
+  }
+  
+  .project-info-header {
+    break-inside: avoid;
+    page-break-after: avoid;
+  }
+}
+

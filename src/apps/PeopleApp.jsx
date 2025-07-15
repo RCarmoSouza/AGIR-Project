@@ -5,15 +5,18 @@ import PeopleDashboard from './pages/PeopleDashboard';
 import BasesManagement from './pages/BasesManagement';
 import CalendarsManagement from './pages/CalendarsManagement';
 import PeopleManagement from './pages/PeopleManagement';
+import PersonDetail from './pages/PersonDetail';
 import TeamsManagement from './pages/TeamsManagement';
 import ResourceUsagePanel from './pages/ResourceUsagePanel';
+import ContractsManagement from './pages/ContractsManagement';
 import { 
   HomeIcon,
   UsersIcon, 
   BuildingOfficeIcon, 
   CalendarDaysIcon,
   UserGroupIcon,
-  ChartBarIcon
+  ChartBarIcon,
+  DocumentTextIcon
 } from '@heroicons/react/24/outline';
 
 const PeopleApp = () => {
@@ -48,6 +51,11 @@ const PeopleApp = () => {
       label: 'Equipes'
     },
     { 
+      path: '/people/contracts', 
+      icon: DocumentTextIcon, 
+      label: 'Contratos'
+    },
+    { 
       path: '/people/bases', 
       icon: BuildingOfficeIcon, 
       label: 'Bases'
@@ -74,7 +82,9 @@ const PeopleApp = () => {
         <Route path="bases" element={<BasesManagement />} />
         <Route path="calendars" element={<CalendarsManagement />} />
         <Route path="people" element={<PeopleManagement />} />
+        <Route path="people/:id" element={<PersonDetail />} />
         <Route path="teams" element={<TeamsManagement />} />
+        <Route path="contracts" element={<ContractsManagement />} />
         <Route path="resources" element={<ResourceUsagePanel />} />
       </Routes>
     </ModuleLayout>
