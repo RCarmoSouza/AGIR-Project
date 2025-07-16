@@ -444,11 +444,34 @@ const ProjectGantt = () => {
               <div className="px-6 py-4 border-b border-gray-200 bg-gray-50 flex justify-between items-center">
                 <div>
                   <h2 className="text-lg font-semibold text-gray-900">Lista de Tarefas</h2>
-                  <p className="text-sm text-gray-600 mt-1">
+                  <p className="text-xs text-gray-600 mt-1">
                     {filteredTasks.length} tarefa{filteredTasks.length !== 1 ? 's' : ''} encontrada{filteredTasks.length !== 1 ? 's' : ''}
                   </p>
                 </div>
-                <div className="flex items-center space-x-2">
+                <div className="flex items-center space-x-3">
+                  {/* Busca */}
+                  <div className="relative">
+                    <MagnifyingGlassIcon className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                    <input
+                      type="text"
+                      placeholder="Buscar tarefas..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                    />
+                  </div>
+
+                  {/* Filtros Avançados */}
+                  <button
+                    onClick={() => setShowFilters(!showFilters)}
+                    className={`p-2 rounded-lg transition-colors ${
+                      showFilters ? 'bg-blue-100 text-blue-600' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                    }`}
+                    title="Filtros avançados"
+                  >
+                    <AdjustmentsHorizontalIcon className="w-5 h-5" />
+                  </button>
+
                   <button
                     onClick={handleManualRecalculation}
                     className="p-2 text-blue-600 hover:text-blue-800 hover:bg-blue-100 rounded-lg transition-colors"
@@ -473,7 +496,7 @@ const ProjectGantt = () => {
               {/* Configuração de colunas */}
               {showColumnConfig && (
                 <div className="px-6 py-4 bg-blue-50 border-b border-blue-200">
-                  <h3 className="text-sm font-medium text-blue-900 mb-3">Configurar Colunas Visíveis</h3>
+                  <h3 className="text-xs font-medium text-blue-900 mb-3">Configurar Colunas Visíveis</h3>
                   <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
                     {Object.entries({
                       tipo: 'Tipo',
@@ -489,7 +512,7 @@ const ProjectGantt = () => {
                       modoAgendamento: 'Modo Agendamento',
                       dependencias: 'Dependências'
                     }).map(([key, label]) => (
-                      <label key={key} className="flex items-center space-x-2 text-sm">
+                      <label key={key} className="flex items-center space-x-2 text-xs">
                         <input
                           type="checkbox"
                           checked={visibleColumns[key]}
@@ -499,6 +522,50 @@ const ProjectGantt = () => {
                         <span className="text-gray-700">{label}</span>
                       </label>
                     ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Filtros avançados */}
+              {showFilters && (
+                <div className="px-6 py-4 bg-gray-50 border-b border-gray-200">
+                  <h3 className="text-sm font-medium text-gray-900 mb-3">Filtros Avançados</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                      <label className="block text-xs font-medium text-gray-700 mb-1">Status</label>
+                      <select
+                        value={filters.status}
+                        onChange={(e) => setFilters(prev => ({ ...prev, status: e.target.value }))}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                      >
+                        <option value="">Todos</option>
+                        <option value="A Fazer">A Fazer</option>
+                        <option value="Em Progresso">Em Progresso</option>
+                        <option value="Concluído">Concluído</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-700 mb-1">Tipo</label>
+                      <select
+                        value={filters.type}
+                        onChange={(e) => setFilters(prev => ({ ...prev, type: e.target.value }))}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                      >
+                        <option value="">Todos</option>
+                        <option value="Epic">Epic</option>
+                        <option value="Story">Story</option>
+                        <option value="Task">Task</option>
+                        <option value="Bug">Bug</option>
+                      </select>
+                    </div>
+                    <div className="flex items-end">
+                      <button
+                        onClick={() => setFilters({ status: '', type: '' })}
+                        className="px-4 py-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors text-sm"
+                      >
+                        Limpar Filtros
+                      </button>
+                    </div>
                   </div>
                 </div>
               )}
@@ -525,22 +592,22 @@ const ProjectGantt = () => {
                     <table className="gantt-task-table w-full table-fixed">
                       <thead className="bg-gray-50 sticky top-0 z-10">
                         <tr>
-                          <th className="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider" style={{ width: '120px' }}>Ações</th>
-                          <th className="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" style={{ width: '80px' }}>ID</th>
-                          <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" style={{ width: '310px' }}>Nome da Tarefa</th>
+                          <th className="px-0 py-1 text-center text-xs font-medium text-gray-500 uppercase tracking-wider" style={{ width: '120px' }}>Ações</th>
+                          <th className="px-0 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" style={{ width: '80px' }}>ID</th>
+                          <th className="px-3 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" style={{ width: '310px' }}>Nome da Tarefa</th>
                         </tr>
                       </thead>
                       <tbody className="bg-white divide-y divide-gray-100">
                         {getVisibleTasks(filteredTasks).map((task) => (
-                          <tr key={task.id} className="gantt-task-row hover:bg-gray-50" style={{ height: '80px' }}>
-                            <td className="px-2 py-3 whitespace-nowrap text-center align-middle" style={{ height: '60px' }}>
+                          <tr key={task.id} className="gantt-task-row hover:bg-gray-50" style={{ height: '42px' }}>
+                            <td className="px-0 py-1 whitespace-nowrap text-center align-middle" style={{ height: '32px' }}>
                               <div className="flex justify-center space-x-1">
                                 <button
-                                  onClick={() => navigate(`/projects/${projectId}/tasks/${task.id}`)}
+                                  onClick={() => navigate(`/projects/tasks/${task.id}`)}
                                   className="p-1 text-blue-600 hover:text-blue-800 hover:bg-blue-100 rounded transition-colors"
                                   title="Visualizar tarefa"
                                 >
-                                  <EyeIcon className="w-3 h-3" />
+                                  <EyeIcon className="w-2 h-2" />
                                 </button>
                                 <button
                                   onClick={() => indentTask(task.id)}
@@ -548,7 +615,7 @@ const ProjectGantt = () => {
                                   title="Indentar tarefa"
                                   disabled={task.level >= 3}
                                 >
-                                  <ChevronRightIcon className="w-3 h-3" />
+                                  <ChevronRightIcon className="w-2 h-2" />
                                 </button>
                                 <button
                                   onClick={() => unindentTask(task.id)}
@@ -556,25 +623,25 @@ const ProjectGantt = () => {
                                   title="Desindentar tarefa"
                                   disabled={task.level <= 0}
                                 >
-                                  <ChevronLeftIcon className="w-3 h-3" />
+                                  <ChevronLeftIcon className="w-2 h-2" />
                                 </button>
                                 <button
                                   onClick={() => removeTask(task.id)}
                                   className="p-1 text-red-600 hover:text-red-800 hover:bg-red-100 rounded transition-colors"
                                   title="Remover tarefa"
                                 >
-                                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <svg className="w-2 h-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                                   </svg>
                                 </button>
                               </div>
                             </td>
-                            <td className="px-2 py-3 whitespace-nowrap text-left align-middle" style={{ height: '60px' }}>
+                            <td className="px-0 py-1 whitespace-nowrap text-left align-middle" style={{ height: '32px' }}>
                               <span className="text-xs font-mono text-gray-600 bg-gray-100 px-2 py-1 rounded">
                                 {task.id || '-'}
                               </span>
                             </td>
-                            <td className="px-3 py-3 text-left align-middle overflow-hidden" style={{ height: '80px' }}>
+                            <td className="px-3 py-1 text-left align-middle overflow-hidden" style={{ height: '32px' }}>
                               <div className="flex items-center h-full">
                                 <div 
                                   style={{ 
@@ -591,9 +658,9 @@ const ProjectGantt = () => {
                                       title={collapsedTasks.has(task.id) ? "Expandir" : "Recolher"}
                                     >
                                       {collapsedTasks.has(task.id) ? (
-                                        <ChevronRightIcon className="w-3 h-3 text-gray-500" />
+                                        <ChevronRightIcon className="w-2 h-2 text-gray-500" />
                                       ) : (
-                                        <ChevronDownIcon className="w-3 h-3 text-gray-500" />
+                                        <ChevronDownIcon className="w-2 h-2 text-gray-500" />
                                       )}
                                     </button>
                                   )}
@@ -608,7 +675,7 @@ const ProjectGantt = () => {
                                         onChange={(e) => setEditingValue(e.target.value)}
                                         onKeyDown={handleKeyPress}
                                         onBlur={saveEdit}
-                                        className="w-full px-1 py-0 text-sm border border-blue-300 rounded focus:outline-none focus:border-blue-500"
+                                        className="w-full px-1 py-0 text-xs border border-blue-300 rounded focus:outline-none focus:border-blue-500"
                                         autoFocus
                                       />
                                     ) : (
@@ -630,14 +697,14 @@ const ProjectGantt = () => {
                         {/* Linha de inserção rápida */}
                         {showNewTaskInput ? (
                           <tr className="gantt-task-row bg-green-50 border-t-2 border-green-200" style={{ height: '26px' }}>
-                            <td className="px-2 py-1 whitespace-nowrap text-center align-middle">
+                            <td className="px-0 py-1 whitespace-nowrap text-center align-middle">
                               <div className="flex justify-center space-x-1">
                                 <button
                                   onClick={addNewTask}
                                   className="p-1 text-green-600 hover:text-green-800 hover:bg-green-100 rounded transition-colors"
                                   title="Salvar tarefa"
                                 >
-                                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <svg className="w-2 h-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                                   </svg>
                                 </button>
@@ -649,11 +716,11 @@ const ProjectGantt = () => {
                                   className="p-1 text-red-600 hover:text-red-800 hover:bg-red-100 rounded transition-colors"
                                   title="Cancelar"
                                 >
-                                  <XMarkIcon className="w-3 h-3" />
+                                  <XMarkIcon className="w-2 h-2" />
                                 </button>
                               </div>
                             </td>
-                            <td className="px-2 py-1 whitespace-nowrap text-left align-middle">
+                            <td className="px-0 py-1 whitespace-nowrap text-left align-middle">
                               <span className="text-xs font-mono text-gray-400 bg-gray-100 px-2 py-1 rounded">
                                 {project.acronym}-{projectTasks.length + 1}
                               </span>
@@ -664,7 +731,7 @@ const ProjectGantt = () => {
                                 value={newTaskTitle}
                                 onChange={(e) => setNewTaskTitle(e.target.value)}
                                 placeholder="Digite o nome da nova tarefa..."
-                                className="w-full px-2 py-1 text-sm border border-green-300 rounded focus:ring-1 focus:ring-green-500 focus:border-green-500"
+                                className="w-full px-2 py-1 text-xs border border-green-300 rounded focus:ring-1 focus:ring-green-500 focus:border-green-500"
                                 onKeyPress={(e) => e.key === 'Enter' && addNewTask()}
                                 autoFocus
                               />
@@ -675,7 +742,7 @@ const ProjectGantt = () => {
                             <td colSpan="3" className="px-3 py-1 text-center align-middle">
                               <button
                                 onClick={() => setShowNewTaskInput(true)}
-                                className="text-sm text-gray-500 hover:text-gray-700 hover:bg-gray-100 px-3 py-1 rounded transition-colors flex items-center justify-center w-full"
+                                className="text-xs text-gray-500 hover:text-gray-700 hover:bg-gray-100 px-3 py-1 rounded transition-colors flex items-center justify-center w-full"
                               >
                                 <PlusIcon className="w-4 h-4 mr-2" />
                                 Adicionar nova tarefa...
@@ -693,25 +760,25 @@ const ProjectGantt = () => {
                   <table className="gantt-task-table w-full table-fixed" style={{ minWidth: '1200px' }}>
                     <thead className="bg-gray-50 sticky top-0 z-10">
                       <tr>
-                        {visibleColumns.tipo && <th className="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider" style={{ width: '80px' }}>Tipo</th>}
-                        {visibleColumns.status && <th className="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider" style={{ width: '100px' }}>Status</th>}
-                        {visibleColumns.responsavel && <th className="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider" style={{ width: '60px' }}>Resp.</th>}
-                        {visibleColumns.dataInicio && <th className="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider" style={{ width: '90px' }}>Início</th>}
-                        {visibleColumns.dataFim && <th className="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider" style={{ width: '90px' }}>Fim</th>}
-                        {visibleColumns.duracao && <th className="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider" style={{ width: '80px' }}>Duração</th>}
-                        {visibleColumns.prioridade && <th className="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider" style={{ width: '90px' }}>Prioridade</th>}
-                        {visibleColumns.epico && <th className="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider" style={{ width: '120px' }}>Épico</th>}
-                        {visibleColumns.sp && <th className="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider" style={{ width: '60px' }}>SP</th>}
-                        {visibleColumns.progresso && <th className="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider" style={{ width: '120px' }}>Progresso</th>}
-                        {visibleColumns.modoAgendamento && <th className="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider" style={{ width: '100px' }}>Modo</th>}
-                        {visibleColumns.dependencias && <th className="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider" style={{ width: '120px' }}>Dependências</th>}
+                        {visibleColumns.tipo && <th className="px-0 py-1 text-center text-xs font-medium text-gray-500 uppercase tracking-wider" style={{ width: '80px' }}>Tipo</th>}
+                        {visibleColumns.status && <th className="px-0 py-1 text-center text-xs font-medium text-gray-500 uppercase tracking-wider" style={{ width: '100px' }}>Status</th>}
+                        {visibleColumns.responsavel && <th className="px-0 py-1 text-center text-xs font-medium text-gray-500 uppercase tracking-wider" style={{ width: '60px' }}>Resp.</th>}
+                        {visibleColumns.dataInicio && <th className="px-0 py-1 text-center text-xs font-medium text-gray-500 uppercase tracking-wider" style={{ width: '90px' }}>Início</th>}
+                        {visibleColumns.dataFim && <th className="px-0 py-1 text-center text-xs font-medium text-gray-500 uppercase tracking-wider" style={{ width: '90px' }}>Fim</th>}
+                        {visibleColumns.duracao && <th className="px-0 py-1 text-center text-xs font-medium text-gray-500 uppercase tracking-wider" style={{ width: '80px' }}>Duração</th>}
+                        {visibleColumns.prioridade && <th className="px-0 py-1 text-center text-xs font-medium text-gray-500 uppercase tracking-wider" style={{ width: '90px' }}>Prioridade</th>}
+                        {visibleColumns.epico && <th className="px-0 py-1 text-center text-xs font-medium text-gray-500 uppercase tracking-wider" style={{ width: '120px' }}>Épico</th>}
+                        {visibleColumns.sp && <th className="px-0 py-1 text-center text-xs font-medium text-gray-500 uppercase tracking-wider" style={{ width: '60px' }}>SP</th>}
+                        {visibleColumns.progresso && <th className="px-0 py-1 text-center text-xs font-medium text-gray-500 uppercase tracking-wider" style={{ width: '120px' }}>Progresso</th>}
+                        {visibleColumns.modoAgendamento && <th className="px-0 py-1 text-center text-xs font-medium text-gray-500 uppercase tracking-wider" style={{ width: '100px' }}>Modo</th>}
+                        {visibleColumns.dependencias && <th className="px-0 py-1 text-center text-xs font-medium text-gray-500 uppercase tracking-wider" style={{ width: '120px' }}>Dependências</th>}
                       </tr>
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-100">
                       {getVisibleTasks(filteredTasks).map((task) => (
-                        <tr key={task.id} className="gantt-task-row hover:bg-gray-50" style={{ height: '80px' }}>
+                        <tr key={task.id} className="gantt-task-row hover:bg-gray-50" style={{ height: '42px' }}>
                           {visibleColumns.tipo && (
-                            <td className="px-2 py-3 whitespace-nowrap text-center align-middle" style={{ height: '60px' }}>
+                            <td className="px-0 py-1 whitespace-nowrap text-center align-middle" style={{ height: '32px' }}>
                               {editingCell?.taskId === task.id && editingCell?.field === 'type' ? (
                                 <select
                                   value={editingValue}
@@ -744,7 +811,7 @@ const ProjectGantt = () => {
                             </td>
                           )}
                           {visibleColumns.status && (
-                            <td className="px-2 py-3 whitespace-nowrap text-center align-middle" style={{ height: '60px' }}>
+                            <td className="px-0 py-1 whitespace-nowrap text-center align-middle" style={{ height: '32px' }}>
                               {editingCell?.taskId === task.id && editingCell?.field === 'status' ? (
                                 <select
                                   value={editingValue}
@@ -774,11 +841,11 @@ const ProjectGantt = () => {
                             </td>
                           )}
                           {visibleColumns.responsavel && (
-                            <td className="px-2 py-3 whitespace-nowrap text-center align-middle" style={{ height: '60px' }}>
+                            <td className="px-0 py-1 whitespace-nowrap text-center align-middle" style={{ height: '32px' }}>
                               {task.assignee ? (
                                 <div className="flex items-center justify-center">
                                   <div 
-                                    className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center text-white text-xs cursor-help"
+                                    className="w-4 h-4 bg-blue-500 rounded-full flex items-center justify-center text-white text-xs cursor-help"
                                     title={typeof task.assignee === 'string' ? task.assignee : task.assignee.name || 'Usuário'}
                                   >
                                     {typeof task.assignee === 'string' ? task.assignee.charAt(0).toUpperCase() : 
@@ -786,33 +853,33 @@ const ProjectGantt = () => {
                                   </div>
                                 </div>
                               ) : (
-                                <span className="text-gray-400 text-sm">-</span>
+                                <span className="text-gray-400 text-xs">-</span>
                               )}
                             </td>
                           )}
                           {visibleColumns.dataInicio && (
-                            <td className="px-2 py-3 whitespace-nowrap text-center align-middle" style={{ height: '60px' }}>
-                              <span className="text-sm">
+                            <td className="px-0 py-1 whitespace-nowrap text-center align-middle" style={{ height: '32px' }}>
+                              <span className="text-xs">
                                 {task.startDate ? new Date(task.startDate).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }) : '-'}
                               </span>
                             </td>
                           )}
                           {visibleColumns.dataFim && (
-                            <td className="px-2 py-3 whitespace-nowrap text-center align-middle" style={{ height: '60px' }}>
-                              <span className="text-sm">
+                            <td className="px-0 py-1 whitespace-nowrap text-center align-middle" style={{ height: '32px' }}>
+                              <span className="text-xs">
                                 {task.endDate ? new Date(task.endDate).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }) : '-'}
                               </span>
                             </td>
                           )}
                           {visibleColumns.duracao && (
-                            <td className="px-2 py-3 whitespace-nowrap text-center align-middle" style={{ height: '60px' }}>
-                              <span className="text-sm font-medium">
+                            <td className="px-0 py-1 whitespace-nowrap text-center align-middle" style={{ height: '32px' }}>
+                              <span className="text-xs font-medium">
                                 {task.duration ? `${task.duration}d` : '-'}
                               </span>
                             </td>
                           )}
                           {visibleColumns.prioridade && (
-                            <td className="px-2 py-3 whitespace-nowrap text-center align-middle" style={{ height: '60px' }}>
+                            <td className="px-0 py-1 whitespace-nowrap text-center align-middle" style={{ height: '32px' }}>
                               <div className="flex items-center justify-center">
                                 {editingCell?.taskId === task.id && editingCell?.field === 'priority' ? (
                                   <select
@@ -838,24 +905,24 @@ const ProjectGantt = () => {
                                     <svg className="w-4 h-4 text-red-500 mr-1" fill="currentColor" viewBox="0 0 20 20">
                                       <path fillRule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clipRule="evenodd" />
                                     </svg>
-                                    <span className="text-sm font-medium text-red-700">Alta</span>
+                                    <span className="text-xs font-medium text-red-700">Alta</span>
                                   </div>
                                 ) : task.priority === 'Média' ? (
                                   <div className="flex items-center">
                                     <svg className="w-4 h-4 text-yellow-500 mr-1" fill="currentColor" viewBox="0 0 20 20">
                                       <path fillRule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clipRule="evenodd" />
                                     </svg>
-                                    <span className="text-sm font-medium text-yellow-700">Média</span>
+                                    <span className="text-xs font-medium text-yellow-700">Média</span>
                                   </div>
                                 ) : task.priority === 'Baixa' ? (
                                   <div className="flex items-center">
                                     <svg className="w-4 h-4 text-green-500 mr-1" fill="currentColor" viewBox="0 0 20 20">
                                       <path fillRule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clipRule="evenodd" />
                                     </svg>
-                                    <span className="text-sm font-medium text-green-700">Baixa</span>
+                                    <span className="text-xs font-medium text-green-700">Baixa</span>
                                   </div>
                                 ) : (
-                                  <span className="text-sm text-gray-500">-</span>
+                                  <span className="text-xs text-gray-500">-</span>
                                 )}
                                   </div>
                                 )}
@@ -863,23 +930,23 @@ const ProjectGantt = () => {
                             </td>
                           )}
                           {visibleColumns.epico && (
-                            <td className="px-2 py-3 whitespace-nowrap text-center align-middle" style={{ height: '60px' }}>
-                              <span className="text-sm text-purple-600 font-medium truncate max-w-24">
+                            <td className="px-0 py-1 whitespace-nowrap text-center align-middle" style={{ height: '32px' }}>
+                              <span className="text-xs text-purple-600 font-medium truncate max-w-24">
                                 {task.epic || '-'}
                               </span>
                             </td>
                           )}
                           {visibleColumns.sp && (
-                            <td className="px-2 py-3 whitespace-nowrap text-center align-middle" style={{ height: '60px' }}>
-                              <span className="text-sm font-mono bg-blue-50 text-blue-700 px-2 py-1 rounded">
+                            <td className="px-0 py-1 whitespace-nowrap text-center align-middle" style={{ height: '32px' }}>
+                              <span className="text-xs font-mono bg-blue-50 text-blue-700 px-2 py-1 rounded">
                                 {task.storyPoints || '-'}
                               </span>
                             </td>
                           )}
                           {visibleColumns.progresso && (
-                            <td className="px-2 py-3 whitespace-nowrap text-center align-middle" style={{ height: '60px' }}>
+                            <td className="px-0 py-1 whitespace-nowrap text-center align-middle" style={{ height: '32px' }}>
                               <div className="flex items-center justify-center">
-                                <div className="w-16 bg-gray-200 rounded-full h-2 mr-2">
+                                <div className="w-12 bg-gray-200 rounded-full h-2 mr-2">
                                   <div 
                                     className="bg-blue-600 h-2 rounded-full" 
                                     style={{ width: `${task.progress || 0}%` }}
@@ -890,7 +957,7 @@ const ProjectGantt = () => {
                             </td>
                           )}
                           {visibleColumns.modoAgendamento && (
-                            <td className="px-2 py-3 whitespace-nowrap text-center align-middle" style={{ height: '60px' }}>
+                            <td className="px-0 py-1 whitespace-nowrap text-center align-middle" style={{ height: '32px' }}>
                               <select
                                 value={task.schedulingMode || 'automatic'}
                                 onChange={(e) => updateTask(task.id, { schedulingMode: e.target.value })}
@@ -902,7 +969,7 @@ const ProjectGantt = () => {
                             </td>
                           )}
                           {visibleColumns.dependencias && (
-                            <td className="px-2 py-3 whitespace-nowrap text-center align-middle" style={{ height: '60px' }}>
+                            <td className="px-0 py-1 whitespace-nowrap text-center align-middle" style={{ height: '32px' }}>
                               <DependencyDisplay
                                 task={task}
                                 allTasks={projectTasks}
@@ -916,18 +983,18 @@ const ProjectGantt = () => {
                       {/* Linha de inserção rápida - tabela direita */}
                       {showNewTaskInput ? (
                         <tr className="gantt-task-row bg-green-50 border-t-2 border-green-200" style={{ height: '26px' }}>
-                          {visibleColumns.tipo && <td className="px-2 py-1 text-center align-middle"><span className="text-xs text-gray-400">Task</span></td>}
-                          {visibleColumns.status && <td className="px-2 py-1 text-center align-middle"><span className="text-xs text-gray-400">A Fazer</span></td>}
-                          {visibleColumns.responsavel && <td className="px-2 py-1 text-center align-middle"><span className="text-xs text-gray-400">-</span></td>}
-                          {visibleColumns.dataInicio && <td className="px-2 py-1 text-center align-middle"><span className="text-xs text-gray-400">-</span></td>}
-                          {visibleColumns.dataFim && <td className="px-2 py-1 text-center align-middle"><span className="text-xs text-gray-400">-</span></td>}
-                          {visibleColumns.duracao && <td className="px-2 py-1 text-center align-middle"><span className="text-xs text-gray-400">-</span></td>}
-                          {visibleColumns.prioridade && <td className="px-2 py-1 text-center align-middle"><span className="text-xs text-gray-400">Média</span></td>}
-                          {visibleColumns.epico && <td className="px-2 py-1 text-center align-middle"><span className="text-xs text-gray-400">-</span></td>}
-                          {visibleColumns.sp && <td className="px-2 py-1 text-center align-middle"><span className="text-xs text-gray-400">0</span></td>}
-                          {visibleColumns.progresso && <td className="px-2 py-1 text-center align-middle"><span className="text-xs text-gray-400">0%</span></td>}
-                          {visibleColumns.modoAgendamento && <td className="px-2 py-1 text-center align-middle"><span className="text-xs text-gray-400">Auto</span></td>}
-                          {visibleColumns.dependencias && <td className="px-2 py-1 text-center align-middle"><span className="text-xs text-gray-400">-</span></td>}
+                          {visibleColumns.tipo && <td className="px-0 py-1 text-center align-middle"><span className="text-xs text-gray-400">Task</span></td>}
+                          {visibleColumns.status && <td className="px-0 py-1 text-center align-middle"><span className="text-xs text-gray-400">A Fazer</span></td>}
+                          {visibleColumns.responsavel && <td className="px-0 py-1 text-center align-middle"><span className="text-xs text-gray-400">-</span></td>}
+                          {visibleColumns.dataInicio && <td className="px-0 py-1 text-center align-middle"><span className="text-xs text-gray-400">-</span></td>}
+                          {visibleColumns.dataFim && <td className="px-0 py-1 text-center align-middle"><span className="text-xs text-gray-400">-</span></td>}
+                          {visibleColumns.duracao && <td className="px-0 py-1 text-center align-middle"><span className="text-xs text-gray-400">-</span></td>}
+                          {visibleColumns.prioridade && <td className="px-0 py-1 text-center align-middle"><span className="text-xs text-gray-400">Média</span></td>}
+                          {visibleColumns.epico && <td className="px-0 py-1 text-center align-middle"><span className="text-xs text-gray-400">-</span></td>}
+                          {visibleColumns.sp && <td className="px-0 py-1 text-center align-middle"><span className="text-xs text-gray-400">0</span></td>}
+                          {visibleColumns.progresso && <td className="px-0 py-1 text-center align-middle"><span className="text-xs text-gray-400">0%</span></td>}
+                          {visibleColumns.modoAgendamento && <td className="px-0 py-1 text-center align-middle"><span className="text-xs text-gray-400">Auto</span></td>}
+                          {visibleColumns.dependencias && <td className="px-0 py-1 text-center align-middle"><span className="text-xs text-gray-400">-</span></td>}
                         </tr>
                       ) : (
                         <tr className="gantt-task-row hover:bg-gray-50" style={{ height: '26px' }}>
@@ -950,7 +1017,7 @@ const ProjectGantt = () => {
         <div className="p-6">
           <div className="bg-red-50 border border-red-200 rounded-lg p-4">
             <h3 className="text-red-800 font-medium">Erro na renderização da lista</h3>
-            <p className="text-red-600 text-sm mt-1">
+            <p className="text-red-600 text-xs mt-1">
               Erro: {error.message}
             </p>
           </div>
@@ -973,56 +1040,73 @@ const ProjectGantt = () => {
             </button>
             <div>
               <h1 className="text-2xl font-bold text-gray-900">{project.name}</h1>
-              <p className="text-sm text-gray-600">{project.description}</p>
+              <p className="text-xs text-gray-600">{project.description}</p>
+              
+              {/* Informações Gerais do Projeto */}
+              <div className="flex items-center space-x-2 mt-2">
+                {/* Início do Projeto */}
+                {project.startDate && (
+                  <div className="flex items-center bg-gray-100 px-2 py-1 rounded-md">
+                    <svg className="w-3 h-3 text-gray-500 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                    <span className="text-sm text-gray-700">
+                      Início: {project.startDate instanceof Date ? project.startDate.toLocaleDateString('pt-BR') : new Date(project.startDate).toLocaleDateString('pt-BR')}
+                    </span>
+                  </div>
+                )}
+                
+                {/* Fim do Projeto */}
+                {project.endDate && (
+                  <div className="flex items-center bg-gray-100 px-2 py-1 rounded-md">
+                    <svg className="w-3 h-3 text-gray-500 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                    <span className="text-sm text-gray-700">
+                      Fim: {project.endDate instanceof Date ? project.endDate.toLocaleDateString('pt-BR') : new Date(project.endDate).toLocaleDateString('pt-BR')}
+                    </span>
+                  </div>
+                )}
+                
+                {/* Owner/Manager do Projeto */}
+                {project.manager && (
+                  <div className="flex items-center bg-gray-100 px-2 py-1 rounded-md">
+                    <svg className="w-3 h-3 text-gray-500 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                    </svg>
+                    <span className="text-sm text-gray-700">
+                      Owner: {typeof project.manager === 'string' ? project.manager : project.manager.name || 'Não definido'}
+                    </span>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
           
           <div className="flex items-center space-x-3">
-            {/* Busca */}
-            <div className="relative">
-              <MagnifyingGlassIcon className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-              <input
-                type="text"
-                placeholder="Buscar tarefas..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
-            </div>
-
-            {/* Filtros */}
-            <button
-              onClick={() => setShowFilters(!showFilters)}
-              className={`p-2 rounded-lg transition-colors ${
-                showFilters ? 'bg-blue-100 text-blue-600' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
-              }`}
-            >
-              <AdjustmentsHorizontalIcon className="w-5 h-5" />
-            </button>
-
             {/* Alternância Lista/Gantt */}
             <div className="flex bg-gray-100 rounded-lg p-1">
               <button
                 onClick={() => setViewMode('list')}
-                className={`px-3 py-1 rounded text-sm font-medium transition-colors ${
+                className={`px-3 py-1 rounded text-xs font-medium transition-colors ${
                   viewMode === 'list'
                     ? 'bg-white text-gray-900 shadow-sm'
                     : 'text-gray-600 hover:text-gray-900'
                 }`}
                 title="Visão Lista"
               >
-                <ListBulletIcon className="w-3 h-3" />
+                <ListBulletIcon className="w-2 h-2" />
               </button>
               <button
                 onClick={() => setViewMode('gantt')}
-                className={`px-3 py-1 rounded text-sm font-medium transition-colors ${
+                className={`px-3 py-1 rounded text-xs font-medium transition-colors ${
                   viewMode === 'gantt'
                     ? 'bg-white text-gray-900 shadow-sm'
                     : 'text-gray-600 hover:text-gray-900'
                 }`}
                 title="Visão Gantt"
               >
-                <ChartBarIcon className="w-3 h-3" />
+                <ChartBarIcon className="w-2 h-2" />
               </button>
             </div>
 
@@ -1036,7 +1120,7 @@ const ProjectGantt = () => {
                 >
                   <MinusIcon className="w-4 h-4" />
                 </button>
-                <span className="text-sm text-gray-600 min-w-[60px] text-center">
+                <span className="text-xs text-gray-600 min-w-[60px] text-center">
                   {zoomLevel}%
                 </span>
                 <button
@@ -1050,49 +1134,6 @@ const ProjectGantt = () => {
             )}
           </div>
         </div>
-
-        {/* Filtros expandidos */}
-        {showFilters && (
-          <div className="mt-4 p-4 bg-gray-50 rounded-lg border">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
-                <select
-                  value={filters.status}
-                  onChange={(e) => setFilters(prev => ({ ...prev, status: e.target.value }))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                >
-                  <option value="">Todos</option>
-                  <option value="A Fazer">A Fazer</option>
-                  <option value="Em Progresso">Em Progresso</option>
-                  <option value="Concluído">Concluído</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Tipo</label>
-                <select
-                  value={filters.type}
-                  onChange={(e) => setFilters(prev => ({ ...prev, type: e.target.value }))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                >
-                  <option value="">Todos</option>
-                  <option value="Epic">Epic</option>
-                  <option value="Story">Story</option>
-                  <option value="Task">Task</option>
-                  <option value="Bug">Bug</option>
-                </select>
-              </div>
-              <div className="flex items-end">
-                <button
-                  onClick={() => setFilters({ status: '', type: '' })}
-                  className="px-4 py-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
-                >
-                  Limpar Filtros
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
       </div>
 
       {/* Conteúdo principal */}
@@ -1105,7 +1146,7 @@ const ProjectGantt = () => {
             {/* Lista de tarefas à esquerda */}
             <div className="w-96 bg-white border-r border-gray-200 flex flex-col">
               <div className="px-4 border-b border-gray-200 bg-gray-50 flex items-center" style={{ height: '48px' }}>
-                <h3 className="text-sm font-medium text-gray-900">Tarefas</h3>
+                <h3 className="text-xs font-medium text-gray-900">Tarefas</h3>
               </div>
               <div className="flex-1 overflow-auto">
                 {getVisibleTasks(filteredTasks).map((task, index) => {
@@ -1131,27 +1172,27 @@ const ProjectGantt = () => {
                               title={collapsedTasks.has(task.id) ? "Expandir" : "Recolher"}
                             >
                               {collapsedTasks.has(task.id) ? (
-                                <ChevronRightIcon className="w-3 h-3 text-gray-500" />
+                                <ChevronRightIcon className="w-2 h-2 text-gray-500" />
                               ) : (
-                                <ChevronDownIcon className="w-3 h-3 text-gray-500" />
+                                <ChevronDownIcon className="w-2 h-2 text-gray-500" />
                               )}
                             </button>
                           )}
                           {task.level > 0 && (
                             <span className="text-gray-400 mr-2">└─</span>
                           )}
-                          <span className={`text-sm ${task.level === 0 ? 'font-semibold text-gray-900' : 'text-gray-700'}`}>
+                          <span className={`text-xs ${task.level === 0 ? 'font-semibold text-gray-900' : 'text-gray-700'}`}>
                             {task.title || 'Sem título'}
                           </span>
                         </div>
                       </div>
                       <div className="flex items-center space-x-1">
                         <button
-                          onClick={() => navigate(`/projects/${projectId}/tasks/${task.id}`)}
+                          onClick={() => navigate(`/projects/tasks/${task.id}`)}
                           className="p-1 text-blue-600 hover:text-blue-800 hover:bg-blue-100 rounded transition-colors"
                           title="Visualizar tarefa"
                         >
-                          <EyeIcon className="w-3 h-3" />
+                          <EyeIcon className="w-2 h-2" />
                         </button>
                         <button
                           onClick={() => indentTask(task.id)}
@@ -1159,7 +1200,7 @@ const ProjectGantt = () => {
                           title="Indentar tarefa"
                           disabled={task.level >= 3}
                         >
-                          <ChevronRightIcon className="w-3 h-3" />
+                          <ChevronRightIcon className="w-2 h-2" />
                         </button>
                         <button
                           onClick={() => unindentTask(task.id)}
@@ -1167,14 +1208,14 @@ const ProjectGantt = () => {
                           title="Desindentar tarefa"
                           disabled={task.level <= 0}
                         >
-                          <ChevronLeftIcon className="w-3 h-3" />
+                          <ChevronLeftIcon className="w-2 h-2" />
                         </button>
                         <button
                           onClick={() => removeTask(task.id)}
                           className="p-1 text-red-600 hover:text-red-800 hover:bg-red-100 rounded transition-colors"
                           title="Remover tarefa"
                         >
-                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <svg className="w-2 h-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                           </svg>
                         </button>
