@@ -7,7 +7,8 @@ import {
   UsersIcon,
   CalendarDaysIcon,
   ArrowRightIcon,
-  Squares2X2Icon
+  Squares2X2Icon,
+  ShieldCheckIcon
 } from '@heroicons/react/24/outline';
 import { useNavigate } from 'react-router-dom';
 import useAppStore from '../stores/appStore';
@@ -64,6 +65,18 @@ const Dashboard = () => {
       metrics: [
         { label: 'Total de Pessoas', value: '24' },
         { label: 'Equipes Ativas', value: '6' }
+      ]
+    },
+    {
+      id: 'security',
+      name: 'Segurança',
+      description: 'Gestão de usuários, perfis e configurações de segurança',
+      icon: ShieldCheckIcon,
+      color: 'bg-red-500',
+      path: '/security',
+      metrics: [
+        { label: 'Usuários Ativos', value: '18' },
+        { label: 'Perfis Configurados', value: '4' }
       ]
     }
   ];

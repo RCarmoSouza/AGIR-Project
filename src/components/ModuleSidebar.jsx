@@ -61,21 +61,23 @@ const ModuleSidebar = ({
           </div>
 
           {/* Header do Módulo */}
-          <div className={`px-4 py-4 border-b border-gray-200 transition-all duration-300 ${
-            !isExpanded ? 'px-2' : ''
-          }`}>
-            <div className={`flex items-center space-x-3 ${!isExpanded ? 'justify-center' : ''}`}>
-              <div className={`w-8 h-8 ${moduleConfig.bgColor} rounded-lg flex items-center justify-center flex-shrink-0`}>
-                <moduleConfig.icon className={`h-5 w-5 ${moduleConfig.iconColor}`} />
-              </div>
-              <div className={`transition-all duration-300 ${
-                isExpanded ? 'opacity-100 w-auto' : 'opacity-0 w-0 overflow-hidden'
-              }`}>
-                <h2 className="text-sm font-semibold text-gray-900">{moduleConfig.title}</h2>
-                <p className="text-xs text-gray-500">{moduleConfig.subtitle}</p>
+          {moduleConfig && (
+            <div className={`px-4 py-4 border-b border-gray-200 transition-all duration-300 ${
+              !isExpanded ? 'px-2' : ''
+            }`}>
+              <div className={`flex items-center space-x-3 ${!isExpanded ? 'justify-center' : ''}`}>
+                <div className={`w-8 h-8 ${moduleConfig.bgColor} rounded-lg flex items-center justify-center flex-shrink-0`}>
+                  <moduleConfig.icon className={`h-5 w-5 ${moduleConfig.iconColor}`} />
+                </div>
+                <div className={`transition-all duration-300 ${
+                  isExpanded ? 'opacity-100 w-auto' : 'opacity-0 w-0 overflow-hidden'
+                }`}>
+                  <h2 className="text-sm font-semibold text-gray-900">{moduleConfig.title}</h2>
+                  <p className="text-xs text-gray-500">{moduleConfig.subtitle}</p>
+                </div>
               </div>
             </div>
-          </div>
+          )}
 
           {/* Menu de Navegação */}
           <nav className={`flex-1 py-6 space-y-1 ${isExpanded ? 'px-4' : 'px-2'}`}>
@@ -93,7 +95,7 @@ const ModuleSidebar = ({
                     flex items-center px-3 py-2 rounded-lg text-sm font-medium
                     transition-colors duration-200 group relative
                     ${isActive 
-                      ? `${moduleConfig.activeColor} border-r-2 ${moduleConfig.activeBorder}` 
+                      ? `${moduleConfig?.activeColor || 'bg-blue-50 text-blue-700'} border-r-2 ${moduleConfig?.activeBorder || 'border-blue-500'}` 
                       : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
                     }
                   `}
@@ -101,7 +103,7 @@ const ModuleSidebar = ({
                 >
                   <div className="flex items-center space-x-3 w-full">
                     <Icon className={`h-5 w-5 flex-shrink-0 ${
-                      isActive ? moduleConfig.activeIconColor : 'text-gray-400 group-hover:text-gray-600'
+                      isActive ? (moduleConfig?.activeIconColor || 'text-blue-600') : 'text-gray-400 group-hover:text-gray-600'
                     }`} />
                     <span className={`transition-all duration-300 ${
                       isExpanded ? 'opacity-100 w-auto' : 'opacity-0 w-0 overflow-hidden'

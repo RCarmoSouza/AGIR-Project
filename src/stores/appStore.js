@@ -6,9 +6,9 @@ const useAppStore = create(
     (set, get) => ({
       // Estado do usuário
       currentUser: {
-        id: '1',
-        name: 'Ana Silva',
-        email: 'ana.silva@agir.com',
+        id: '2',
+        name: 'João Silva',
+        email: 'joao.silva@agir.com',
         role: 'Manager',
         hourlyRate: 150
       },

@@ -5,6 +5,7 @@ import ProjectsApp from './apps/ProjectsApp';
 import TimesheetApp from './apps/TimesheetApp';
 import PeopleApp from './apps/PeopleApp';
 import KanbanApp from './apps/KanbanApp';
+import SecurityApp from './apps/SecurityApp';
 import './App.css';
 
 function App() {
@@ -20,6 +21,7 @@ function App() {
           <Route path="/timesheet/*" element={<TimesheetApp />} />
           <Route path="/people/*" element={<PeopleApp />} />
           <Route path="/kanban/*" element={<KanbanApp />} />
+          <Route path="/security/*" element={<SecurityApp />} />
         </Routes>
       </div>
     </Router>
