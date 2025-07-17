@@ -6,7 +6,8 @@ import {
   UserGroupIcon,
   UsersIcon,
   CalendarDaysIcon,
-  ArrowRightIcon
+  ArrowRightIcon,
+  Squares2X2Icon
 } from '@heroicons/react/24/outline';
 import { useNavigate } from 'react-router-dom';
 import useAppStore from '../stores/appStore';
@@ -27,6 +28,18 @@ const Dashboard = () => {
       metrics: [
         { label: 'Projetos Ativos', value: metrics.activeProjects },
         { label: 'Total de Tarefas', value: metrics.totalTasks }
+      ]
+    },
+    {
+      id: 'kanban',
+      name: 'Kanban',
+      description: 'Visualização centralizada de todas as tarefas',
+      icon: Squares2X2Icon,
+      color: 'bg-indigo-500',
+      path: '/kanban',
+      metrics: [
+        { label: 'Minhas Tarefas', value: metrics.myTasks || 0 },
+        { label: 'Em Andamento', value: metrics.tasksInProgress || 0 }
       ]
     },
     {

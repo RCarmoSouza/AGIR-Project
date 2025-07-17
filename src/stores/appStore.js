@@ -696,6 +696,11 @@ const useAppStore = create(
         return get().getLeafTasks(sprintTasks);
       },
       
+      // Função para obter todas as tarefas do sistema (para Kanban global)
+      getAllTasks: () => {
+        return get().tasks;
+      },
+      
       getDashboardMetrics: () => {
         const state = get();
         return {
