@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Bars3Icon, BellIcon, UserCircleIcon, ChevronDownIcon } from '@heroicons/react/24/outline';
 import { 
   ArrowRightOnRectangleIcon,
@@ -7,17 +8,26 @@ import {
 } from '@heroicons/react/24/outline';
 import useAppStore from '../stores/appStore';
 
-const Header = ({ onMenuClick }) => {
-  const { currentUser } = useAppStore();
+const Header = ({ onMenuClick, showMenuButton = true }) => {
+  const navigate = useNavigate();
+  const { currentUser, logout } = useAppStore();
   const [userMenuOpen, setUserMenuOpen] = useState(false);
 
   const handleLogout = () => {
-    // TODO: Implementar logout real
-    console.log('Logout realizado');
-    // Limpar dados do usuário
-    // Redirecionar para login
-    alert('Logout realizado com sucesso!');
+    console.log('Realizando logout...');
+    
+    // Limpar estado da aplicação
+    logout();
+    
+    // Limpar localStorage
+    localStorage.removeItem('authToken');
+    localStorage.removeItem('currentUser');
+    
+    // Fechar menu
     setUserMenuOpen(false);
+    
+    // Redirecionar para login
+    navigate('/login', { replace: true });
   };
 
   const handleProfile = () => {
@@ -37,14 +47,19 @@ const Header = ({ onMenuClick }) => {
       <div className="flex items-center justify-between px-4 py-3">
         {/* Logo e Menu */}
         <div className="flex items-center space-x-4">
-          <button
-            onClick={onMenuClick}
-            className="lg:hidden p-2 rounded-md text-gray-600 hover:text-gray-900 hover:bg-gray-100"
-          >
-            <Bars3Icon className="h-6 w-6" />
-          </button>
+          {showMenuButton && (
+            <button
+              onClick={onMenuClick}
+              className="lg:hidden p-2 rounded-md text-gray-600 hover:text-gray-900 hover:bg-gray-100"
+            >
+              <Bars3Icon className="h-6 w-6" />
+            </button>
+          )}
           
-          <div className="flex items-center space-x-3">
+          <button 
+            onClick={() => navigate('/')}
+            className="flex items-center space-x-3 hover:bg-gray-100 rounded-lg p-2 transition-colors"
+          >
             <div className="w-8 h-8 bg-gradient-to-r from-pink-500 to-cyan-500 rounded-lg flex items-center justify-center">
               <span className="text-white font-bold text-sm">A</span>
             </div>
@@ -52,7 +67,7 @@ const Header = ({ onMenuClick }) => {
               <h1 className="text-xl font-bold text-gray-900">AGIR</h1>
               <p className="text-xs text-gray-500">Sistema de Gestão Ágil</p>
             </div>
-          </div>
+          </button>
         </div>
 
         {/* Usuário */}

@@ -1,11 +1,13 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Dashboard from './pages/Dashboard';
+import Login from './pages/Login';
 import ProjectsApp from './apps/ProjectsApp';
 import TimesheetApp from './apps/TimesheetApp';
 import PeopleApp from './apps/PeopleApp';
 import KanbanApp from './apps/KanbanApp';
 import SecurityApp from './apps/SecurityApp';
+import ProtectedRoute from './components/ProtectedRoute';
 import './App.css';
 
 function App() {
@@ -13,15 +15,42 @@ function App() {
     <Router>
       <div className="min-h-screen bg-gray-50">
         <Routes>
-          {/* Dashboard principal - sem sidebar */}
-          <Route path="/" element={<Dashboard />} />
+          {/* Página de login */}
+          <Route path="/login" element={<Login />} />
           
-          {/* Apps modulares - cada um com seu próprio layout */}
-          <Route path="/projects/*" element={<ProjectsApp />} />
-          <Route path="/timesheet/*" element={<TimesheetApp />} />
-          <Route path="/people/*" element={<PeopleApp />} />
-          <Route path="/kanban/*" element={<KanbanApp />} />
-          <Route path="/security/*" element={<SecurityApp />} />
+          {/* Dashboard principal - protegido */}
+          <Route path="/" element={
+            <ProtectedRoute>
+              <Dashboard />
+            </ProtectedRoute>
+          } />
+          
+          {/* Apps modulares - todos protegidos */}
+          <Route path="/projects/*" element={
+            <ProtectedRoute>
+              <ProjectsApp />
+            </ProtectedRoute>
+          } />
+          <Route path="/timesheet/*" element={
+            <ProtectedRoute>
+              <TimesheetApp />
+            </ProtectedRoute>
+          } />
+          <Route path="/people/*" element={
+            <ProtectedRoute>
+              <PeopleApp />
+            </ProtectedRoute>
+          } />
+          <Route path="/kanban/*" element={
+            <ProtectedRoute>
+              <KanbanApp />
+            </ProtectedRoute>
+          } />
+          <Route path="/security/*" element={
+            <ProtectedRoute>
+              <SecurityApp />
+            </ProtectedRoute>
+          } />
         </Routes>
       </div>
     </Router>

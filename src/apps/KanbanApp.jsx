@@ -1,42 +1,82 @@
-import React from 'react';
-import { Routes, Route, Link } from 'react-router-dom';
+import React, { useState } from 'react';
+import { Routes, Route } from 'react-router-dom';
 import GlobalKanban from './pages/GlobalKanban';
-import { Squares2X2Icon, HomeIcon } from '@heroicons/react/24/outline';
+import Header from '../components/Header';
+import ModuleSidebar from '../components/ModuleSidebar';
+import { 
+  Squares2X2Icon, 
+  ViewColumnsIcon,
+  ChartBarIcon,
+  FunnelIcon,
+  Cog6ToothIcon
+} from '@heroicons/react/24/outline';
 
 const KanbanApp = () => {
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  const sidebarItems = [
+    {
+      name: 'Kanban Global',
+      href: '/kanban',
+      icon: Squares2X2Icon,
+      current: true
+    },
+    {
+      name: 'Quadros',
+      href: '/kanban/boards',
+      icon: ViewColumnsIcon,
+      current: false
+    },
+    {
+      name: 'Relatórios',
+      href: '/kanban/reports',
+      icon: ChartBarIcon,
+      current: false
+    },
+    {
+      name: 'Filtros Salvos',
+      href: '/kanban/filters',
+      icon: FunnelIcon,
+      current: false
+    },
+    {
+      name: 'Configurações',
+      href: '/kanban/settings',
+      icon: Cog6ToothIcon,
+      current: false
+    }
+  ];
+
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header customizado */}
-      <header className="bg-white shadow-sm border-b border-gray-200">
-        <div className="px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <Link to="/" className="flex items-center text-gray-600 hover:text-gray-900">
-                <HomeIcon className="w-5 h-5 mr-2" />
-                AGIR
-              </Link>
-              <span className="text-gray-400">/</span>
-              <div className="flex items-center space-x-2">
-                <div className="p-2 bg-indigo-100 rounded-lg">
-                  <Squares2X2Icon className="w-5 h-5 text-indigo-600" />
-                </div>
-                <div>
-                  <h1 className="text-lg font-semibold text-gray-900">Kanban</h1>
-                  <p className="text-sm text-gray-500">Visualização centralizada de tarefas</p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </header>
+      {/* Header */}
+      <Header onMenuClick={() => setSidebarOpen(!sidebarOpen)} />
+      
+      <div className="flex pt-16">
+        {/* Sidebar */}
+        <ModuleSidebar
+          title="Kanban"
+          subtitle="Visualização centralizada de tarefas"
+          icon={Squares2X2Icon}
+          items={sidebarItems}
+          isOpen={sidebarOpen}
+          onClose={() => setSidebarOpen(false)}
+        />
 
-      {/* Conteúdo principal */}
-      <main className="p-6">
-        <Routes>
-          <Route path="/" element={<GlobalKanban />} />
-          <Route path="/board" element={<GlobalKanban />} />
-        </Routes>
-      </main>
+        {/* Conteúdo principal */}
+        <main className="flex-1 lg:ml-64">
+          <div className="p-6">
+            <Routes>
+              <Route path="/" element={<GlobalKanban />} />
+              <Route path="/board" element={<GlobalKanban />} />
+              <Route path="/boards" element={<div>Quadros - Em desenvolvimento</div>} />
+              <Route path="/reports" element={<div>Relatórios - Em desenvolvimento</div>} />
+              <Route path="/filters" element={<div>Filtros Salvos - Em desenvolvimento</div>} />
+              <Route path="/settings" element={<div>Configurações - Em desenvolvimento</div>} />
+            </Routes>
+          </div>
+        </main>
+      </div>
     </div>
   );
 };

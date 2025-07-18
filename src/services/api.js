@@ -1,7 +1,9 @@
 import axios from 'axios';
 
 // Configuração base da API
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+const API_BASE_URL = import.meta.env.VITE_API_URL ? 
+  `${import.meta.env.VITE_API_URL}/api` : 
+  '/api';
 
 // Criar instância do axios
 const api = axios.create({
@@ -40,9 +42,10 @@ api.interceptors.response.use(
       switch (status) {
         case 401:
           // Token expirado ou inválido
-          localStorage.removeItem('authToken');
-          localStorage.removeItem('currentUser');
-          window.location.href = '/login';
+          console.log('Token inválido/expirado - erro 401 recebido');
+          // Removendo limpeza automática para debug
+          // localStorage.removeItem('authToken');
+          // localStorage.removeItem('currentUser');
           break;
         case 403:
           // Acesso negado
